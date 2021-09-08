@@ -1,5 +1,4 @@
 """Interface for reading commands from Logitech F710 Gamepad."""
-from absl import app
 from absl import flags
 from absl import logging
 
@@ -173,18 +172,3 @@ class Gamepad:
 
   def stop(self):
     self.is_running = False
-
-
-def main(_):
-  gamepad = Gamepad()
-  while True:
-    lin_speed, ang_speed, estop = gamepad.get_command(time.time())
-    vx, vy, _ = lin_speed
-    print("Vx: {}, Vy: {}, Wz: {}, Estop: {}".format(vx, vy, ang_speed, estop))
-    time.sleep(0.1)
-    if estop:
-      break
-
-
-if __name__ == "__main__":
-  app.run(main)

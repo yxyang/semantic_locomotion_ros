@@ -5,8 +5,9 @@ from absl import flags
 
 import time
 
-from robots import gamepad_reader
+from a1_interface.msg import controller_mode
 from convex_mpc_controller import locomotion_controller
+from robots import gamepad_reader
 
 # from semantic_locomotion.robots.gamepad import gamepad_reader
 
@@ -20,11 +21,10 @@ FLAGS = flags.FLAGS
 
 def _update_controller(controller, gamepad):
   # Update speed
-  lin_speed, rot_speed = gamepad.speed_command
-  controller.set_desired_speed(lin_speed, rot_speed)
-  if (gamepad.estop_flagged) and (controller.mode !=
-                                  locomotion_controller.ControllerMode.DOWN):
-    controller.set_controller_mode(locomotion_controller.ControllerMode.DOWN)
+  speed_command = gamepad.speed_command
+  controller.set_desired_speed(speed_command)
+  if (gamepad.estop_flagged) and (controller.mode != controller_mode.DOWN):
+    controller.set_controller_mode(controller_mode.DOWN)
 
   # Update controller moce
   controller.set_controller_mode(gamepad.mode_command)
@@ -54,8 +54,7 @@ def main(argv):
 
   finally:
     gamepad.stop()
-    controller.set_controller_mode(
-        locomotion_controller.ControllerMode.TERMINATE)
+    controller.set_controller_mode(controller_mode.TERMINATE)
 
 
 if __name__ == "__main__":

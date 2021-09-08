@@ -2,7 +2,6 @@
 from absl import logging
 
 from datetime import datetime
-import enum
 import ml_collections
 import numpy as np
 import os
@@ -14,6 +13,8 @@ import threading
 import time
 from typing import Tuple
 
+from a1_interface.msg import gait_type
+from a1_interface.msg import controller_mode
 from convex_mpc_controller import com_velocity_estimator
 from convex_mpc_controller import offset_gait_generator
 from convex_mpc_controller import raibert_swing_leg_controller
@@ -25,17 +26,17 @@ from robots.motors import MotorCommand
 from robots.motors import MotorControlMode
 
 
-class ControllerMode(enum.Enum):
-  DOWN = 1
-  STAND = 2
-  WALK = 3
-  TERMINATE = 4
+# class controller_mode(enum.Enum):
+#   DOWN = 1
+#   STAND = 2
+#   WALK = 3
+#   TERMINATE = 4
 
 
-class GaitType(enum.Enum):
-  CRAWL = 1
-  TROT = 2
-  FLYTROT = 3
+# class gait_type(enum.Enum):
+#   CRAWL = 1
+#   TROT = 2
+#   FLYTROT = 3
 
 
 def get_sim_conf():
@@ -85,10 +86,10 @@ class LocomotionController(object):
     if not os.path.exists(self._logdir):
       os.makedirs(self._logdir)
 
-    self._mode = ControllerMode.DOWN
-    self.set_controller_mode(ControllerMode.STAND)
+    self._mode = controller_mode.DOWN
+    self.set_controller_mode(controller_mode.STAND)
     self._gait = None
-    self._desired_gait = GaitType.CRAWL
+    self._desired_gait = gait_type.CRAWL
     self._handle_gait_switch()
     self.run_thread = threading.Thread(target=self.run)
     self.run_thread.start()
@@ -260,10 +261,10 @@ class LocomotionController(object):
     if self._mode == self._desired_mode:
       return
     self._mode = self._desired_mode
-    if self._desired_mode == ControllerMode.DOWN:
+    if self._desired_mode == controller_mode.DOWN:
       logging.info("Entering joint damping mode.")
       self._flush_logging()
-    elif self._desired_mode == ControllerMode.STAND:
+    elif self._desired_mode == controller_mode.STAND:
       logging.info("Standing up.")
       self.reset_robot()
     else:
@@ -308,10 +309,10 @@ class LocomotionController(object):
   def _handle_gait_switch(self):
     if self._gait == self._desired_gait:
       return
-    if self._desired_gait == GaitType.CRAWL:
+    if self._desired_gait == gait_type.CRAWL:
       logging.info("Switched to Crawling gait.")
       self._gait_config = crawl.get_config()
-    elif self._desired_gait == GaitType.TROT:
+    elif self._desired_gait == gait_type.TROT:
       logging.info("Switched  to Trotting gait.")
       self._gait_config = trot.get_config()
     else:
@@ -330,13 +331,13 @@ class LocomotionController(object):
       self._handle_mode_switch()
       self._handle_gait_switch()
       self.update()
-      if self._mode == ControllerMode.DOWN:
+      if self._mode == controller_mode.DOWN:
         time.sleep(0.1)
-      elif self._mode == ControllerMode.STAND:
+      elif self._mode == controller_mode.STAND:
         action = self._get_stand_action()
         self._robot.step(action)
         time.sleep(0.001)
-      elif self._mode == ControllerMode.WALK:
+      elif self._mode == controller_mode.WALK:
         action, qp_sol = self.get_action()
         self._robot.step(action)
         self._update_logging(action, qp_sol)
@@ -361,7 +362,7 @@ class LocomotionController(object):
 
   @property
   def is_safe(self):
-    if self.mode != ControllerMode.WALK:
+    if self.mode != controller_mode.WALK:
       return True
     rot_mat = np.array(
         self._robot.pybullet_client.getMatrixFromQuaternion(
@@ -375,15 +376,14 @@ class LocomotionController(object):
   def mode(self):
     return self._mode
 
-  def set_desired_speed(self, desired_lin_speed_ratio,
-                        desired_rot_speed_ratio):
+  def set_desired_speed(self, speed_command):
     desired_lin_speed = (
-        self._gait_config.max_forward_speed * desired_lin_speed_ratio[0],
-        self._gait_config.max_side_speed * desired_lin_speed_ratio[1],
+        self._gait_config.max_forward_speed * speed_command.vel_x,
+        self._gait_config.max_side_speed * speed_command.vel_y,
         0,
     )
     desired_rot_speed = \
-      self._gait_config.max_rot_speed * desired_rot_speed_ratio
+      self._gait_config.max_rot_speed * speed_command.rot_z
     self._swing_controller.desired_speed = desired_lin_speed
     self._swing_controller.desired_twisting_speed = desired_rot_speed
     self._stance_controller.desired_speed = desired_lin_speed
