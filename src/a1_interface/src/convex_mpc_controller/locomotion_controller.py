@@ -1,6 +1,4 @@
 """A model based controller framework."""
-from absl import logging
-
 from datetime import datetime
 import ml_collections
 import numpy as np
@@ -9,6 +7,7 @@ import pickle
 import pybullet
 from pybullet_utils import bullet_client
 import rospkg
+import rospy
 import threading
 import time
 from typing import Tuple
@@ -25,13 +24,11 @@ from robots import a1_robot
 from robots.motors import MotorCommand
 from robots.motors import MotorControlMode
 
-
 # class controller_mode(enum.Enum):
 #   DOWN = 1
 #   STAND = 2
 #   WALK = 3
 #   TERMINATE = 4
-
 
 # class gait_type(enum.Enum):
 #   CRAWL = 1
@@ -80,14 +77,19 @@ class LocomotionController(object):
     self.reset_controllers()
     self._reset_time = self._clock()
     self._time_since_reset = 0
+    self._last_command_timestamp = 0
     self._logs = []
-    self._logdir = os.path.join(rospkg.get_ros_home(), logdir)
-    logging.info("Logging to: {}".format(self._logdir))
-    if not os.path.exists(self._logdir):
-      os.makedirs(self._logdir)
+    if logdir:
+      self._logdir = os.path.join(rospkg.get_ros_home(), logdir)
+      if not os.path.exists(self._logdir):
+        os.makedirs(self._logdir)
+      rospy.loginfo("Logging to: {}".format(self._logdir))
+    else:
+      rospy.loginfo("Logging disabled.")
+      self._logdir = None
 
     self._mode = controller_mode.DOWN
-    self.set_controller_mode(controller_mode.STAND)
+    self.set_controller_mode(controller_mode(mode=controller_mode.STAND))
     self._gait = None
     self._desired_gait = gait_type.CRAWL
     self._handle_gait_switch()
@@ -262,13 +264,13 @@ class LocomotionController(object):
       return
     self._mode = self._desired_mode
     if self._desired_mode == controller_mode.DOWN:
-      logging.info("Entering joint damping mode.")
+      rospy.loginfo("Entering joint damping mode.")
       self._flush_logging()
     elif self._desired_mode == controller_mode.STAND:
-      logging.info("Standing up.")
+      rospy.loginfo("Standing up.")
       self.reset_robot()
     else:
-      logging.info("Walking.")
+      rospy.loginfo("Walking.")
       self.reset_controllers()
       self._start_logging()
 
@@ -297,26 +299,28 @@ class LocomotionController(object):
     )
     if self._use_real_robot:
       frame['foot_contact_force'] = self._robot.foot_forces
-    self._logs.append(frame)
+    if self._logdir:
+      self._logs.append(frame)
 
   def _flush_logging(self):
-    filename = 'log_{}.pkl'.format(
-        datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
-    pickle.dump(self._logs, open(os.path.join(self._logdir, filename), 'wb'))
-    logging.info("Data logged to: {}".format(
-        os.path.join(self._logdir, filename)))
+    if self._logdir:
+      filename = 'log_{}.pkl'.format(
+          datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
+      pickle.dump(self._logs, open(os.path.join(self._logdir, filename), 'wb'))
+      rospy.loginfo("Data logged to: {}".format(
+          os.path.join(self._logdir, filename)))
 
   def _handle_gait_switch(self):
     if self._gait == self._desired_gait:
       return
     if self._desired_gait == gait_type.CRAWL:
-      logging.info("Switched to Crawling gait.")
+      rospy.loginfo("Switched to Crawling gait.")
       self._gait_config = crawl.get_config()
     elif self._desired_gait == gait_type.TROT:
-      logging.info("Switched  to Trotting gait.")
+      rospy.loginfo("Switched  to Trotting gait.")
       self._gait_config = trot.get_config()
     else:
-      logging.info("Switched to Fly-Trotting gait.")
+      rospy.loginfo("Switched to Fly-Trotting gait.")
       self._gait_config = flytrot.get_config()
 
     self._gait = self._desired_gait
@@ -326,7 +330,7 @@ class LocomotionController(object):
       self._gait_config.foot_clearance_land
 
   def run(self):
-    logging.info("Low level thread started...")
+    rospy.loginfo("Low level thread started...")
     while True:
       self._handle_mode_switch()
       self._handle_gait_switch()
@@ -342,7 +346,7 @@ class LocomotionController(object):
         self._robot.step(action)
         self._update_logging(action, qp_sol)
       else:
-        logging.info("Running loop terminated, exiting...")
+        rospy.loginfo("Running loop terminated, exiting...")
         break
 
       # Camera setup:
@@ -354,11 +358,12 @@ class LocomotionController(object):
             cameraTargetPosition=self._robot.base_position,
         )
 
-  def set_controller_mode(self, mode):
-    self._desired_mode = mode
+  def set_controller_mode(self, command):
+    self._desired_mode = command.mode
+    self._last_command_timestamp = self._time_since_reset
 
-  def set_gait(self, gait):
-    self._desired_gait = gait
+  def set_gait(self, command):
+    self._desired_gait = command.type
 
   @property
   def is_safe(self):
@@ -375,6 +380,14 @@ class LocomotionController(object):
   @property
   def mode(self):
     return self._mode
+
+  @property
+  def last_command_timestamp(self):
+    return self._last_command_timestamp
+
+  @property
+  def gait(self):
+    return self._gait
 
   def set_desired_speed(self, speed_command):
     desired_lin_speed = (

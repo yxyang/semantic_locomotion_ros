@@ -52,6 +52,7 @@ add_message_files(
   gait_type.msg
   controller_mode.msg
   speed_command.msg
+  robot_state.msg
 )
 
 ## Generate services in the 'srv' folder

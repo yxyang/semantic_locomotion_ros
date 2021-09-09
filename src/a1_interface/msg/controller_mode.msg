@@ -5,4 +5,5 @@ uint8 STAND = 1
 uint8 WALK = 2
 uint8 TERMINATE = 3
 
-uint8 robot_mode
+uint8 mode
+time timestamp

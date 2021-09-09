@@ -51,6 +51,7 @@ import platform
 import math
 import time
 import codecs
+import rospy
 from warnings import warn
 from itertools import count
 from operator import itemgetter
@@ -2467,7 +2468,7 @@ class InputDevice(object):  # pylint: disable=useless-object-inheritance
         return self._character_file
 
     def __iter__(self):
-        while True:
+        while not rospy.is_shutdown():
             event = self._do_iter()
             if event:
                 yield event
@@ -2681,7 +2682,7 @@ class GamePad(InputDevice):
         return self.__device_number
 
     def __iter__(self):
-        while True:
+        while not rospy.is_shutdown():
             if WIN:
                 self.__check_state()
             event = self._do_iter()

@@ -1,9 +1,9 @@
 """Interface for reading commands from Logitech F710 Gamepad."""
 from absl import flags
-from absl import logging
 
 import itertools
 import numpy as np
+import rospy
 from third_party import inputs
 import threading
 import time
@@ -101,10 +101,12 @@ class Gamepad:
       self._lb_pressed = bool(event.state)
       if not self._estop_flagged and event.state == 0:
         self._gait = next(self._gait_generator)
+        rospy.loginfo("Switched gait mode to {}.".format(self._gait))
     elif event.ev_type == 'Key' and event.code == 'BTN_TR':
       self._rb_pressed = bool(event.state)
       if not self._estop_flagged and event.state == 0:
         self._mode = next(self._mode_generator)
+        rospy.loginfo("Switched control mode to {}.".format(self._mode))
     elif event.ev_type == 'Key' and event.code == 'BTN_THUMBL':
       self._lj_pressed = bool(event.state)
 
@@ -124,11 +126,11 @@ class Gamepad:
 
     if self._estop_flagged and self._lj_pressed:
       self._estop_flagged = False
-      logging.info("Estop Released.")
+      rospy.loginfo("Estop Released.")
 
     if self._lb_pressed and self._rb_pressed:
       if not self._estop_flagged:
-        logging.info("EStop Flagged, press LEFT joystick to release.")
+        rospy.loginfo("EStop Flagged, press LEFT joystick to release.")
       self._estop_flagged = True
       while self._mode != controller_mode.DOWN:
         self._mode = next(self._mode_generator)
@@ -146,7 +148,10 @@ class Gamepad:
                       self.wz + max_delta_speed)
 
     self.last_timestamp = time.time()
-    return speed_command(vel_x=self.vx, vel_y=self.vy, rot_z=self.wz)
+    return speed_command(vel_x=self.vx,
+                         vel_y=self.vy,
+                         rot_z=self.wz,
+                         timestamp=rospy.get_rostime())
 
   @property
   def estop_flagged(self):
@@ -154,7 +159,7 @@ class Gamepad:
 
   def flag_estop(self):
     if not self._estop_flagged:
-      logging.info("Estop flagged by program.")
+      rospy.loginfo("Estop flagged by program.")
       self._estop_flagged = True
       while self._mode != controller_mode.DOWN:
         self._mode = next(self._mode_generator)
@@ -162,13 +167,14 @@ class Gamepad:
   @property
   def mode_command(self):
     if self._estop_flagged:
-      return controller_mode.DOWN
+      return controller_mode(mode=controller_mode.DOWN,
+                             timestamp=rospy.get_rostime())
     else:
-      return self._mode
+      return controller_mode(mode=self._mode, timestamp=rospy.get_rostime())
 
   @property
   def gait_command(self):
-    return self._gait
+    return gait_type(type=self._gait, timestamp=rospy.get_rostime())
 
   def stop(self):
     self.is_running = False

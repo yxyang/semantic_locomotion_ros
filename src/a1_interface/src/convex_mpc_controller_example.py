@@ -3,58 +3,56 @@
 from absl import app
 from absl import flags
 
-import time
+import rospy
 
 from a1_interface.msg import controller_mode
+from a1_interface.msg import gait_type
+from a1_interface.msg import robot_state
+from a1_interface.msg import speed_command
 from convex_mpc_controller import locomotion_controller
-from robots import gamepad_reader
-
-# from semantic_locomotion.robots.gamepad import gamepad_reader
 
 flags.DEFINE_string("logdir", None, "where to log trajectories.")
 flags.DEFINE_bool("use_real_robot", False,
                   "whether to use real robot or simulation")
 flags.DEFINE_bool("show_gui", False, "whether to show GUI.")
-flags.DEFINE_float("max_time_secs", 1., "maximum time to run the robot.")
 FLAGS = flags.FLAGS
 
-
-def _update_controller(controller, gamepad):
-  # Update speed
-  speed_command = gamepad.speed_command
-  controller.set_desired_speed(speed_command)
-  if (gamepad.estop_flagged) and (controller.mode != controller_mode.DOWN):
-    controller.set_controller_mode(controller_mode.DOWN)
-
-  # Update controller moce
-  controller.set_controller_mode(gamepad.mode_command)
-
-  # Update gait
-  controller.set_gait(gamepad.gait_command)
+WATCHDOG_TIMEOUT_SECS = 1
 
 
 def main(argv):
   del argv  # unused
-  gamepad = gamepad_reader.Gamepad(vel_scale_x=1,
-                                   vel_scale_y=1,
-                                   vel_scale_rot=1,
-                                   max_acc=0.3)
   controller = locomotion_controller.LocomotionController(
-      FLAGS.use_real_robot, FLAGS.show_gui)
+      FLAGS.use_real_robot, FLAGS.show_gui, FLAGS.logdir)
 
-  try:
-    start_time = controller.time_since_reset
-    current_time = start_time
-    while current_time - start_time < FLAGS.max_time_secs:
-      current_time = controller.time_since_reset
-      time.sleep(0.05)
-      _update_controller(controller, gamepad)
-      if not controller.is_safe:
-        gamepad.flag_estop()
+  rospy.Subscriber("controller_mode", controller_mode,
+                   controller.set_controller_mode)
+  rospy.Subscriber("speed_command", speed_command,
+                   controller.set_desired_speed)
+  rospy.Subscriber("gait_type", gait_type, controller.set_gait)
+  robot_state_publisher = rospy.Publisher('robot_state',
+                                          robot_state,
+                                          queue_size=10)
+  rospy.init_node("a1_interface", anonymous=True)
 
-  finally:
-    gamepad.stop()
-    controller.set_controller_mode(controller_mode.TERMINATE)
+  rate = rospy.Rate(20)
+  while not rospy.is_shutdown():
+    state = robot_state(is_safe=controller.is_safe,
+                        controller_mode=controller.mode,
+                        gait_type=controller.gait,
+                        timestamp=rospy.get_rostime())
+    robot_state_publisher.publish(state)
+    if controller.time_since_reset - controller.last_command_timestamp \
+      > WATCHDOG_TIMEOUT_SECS:
+      rospy.loginfo("Controller node timeout, stopping robot.")
+      controller.set_controller_mode(
+          controller_mode(mode=controller_mode.DOWN,
+                          timestamp=rospy.get_rostime()))
+    rate.sleep()
+
+  controller.set_controller_mode(
+      controller_mode(mode=controller_mode.TERMINATE,
+                      timestamp=rospy.get_rostime()))
 
 
 if __name__ == "__main__":
