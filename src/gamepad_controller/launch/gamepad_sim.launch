@@ -1,4 +1,5 @@
 <launch>
   <node pkg="gamepad_controller" type="gamepad_reader.py" name="gamepad_controller" />
   <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=True" />
+  <node pkg="info_publisher" type="info_publisher.py" name="info_publisher" />
 </launch>

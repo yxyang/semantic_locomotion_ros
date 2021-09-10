@@ -3,6 +3,7 @@
 from absl import app
 from absl import flags
 import rospy
+from std_msgs.msg import Bool
 
 from a1_interface.msg import controller_mode
 from a1_interface.msg import gait_type
@@ -41,6 +42,7 @@ def main(_):
   speed_command_publisher = rospy.Publisher('speed_command',
                                             speed_command,
                                             queue_size=1)
+  estop_publisher = rospy.Publisher('estop', Bool, queue_size=1)
   robot_state_listener = RobotStateListener()
   rospy.Subscriber("robot_state", robot_state, robot_state_listener.callback)
   if FLAGS.publish_gaits:
@@ -54,6 +56,7 @@ def main(_):
       gamepad.flag_estop()
     controller_mode_publisher.publish(gamepad.mode_command)
     speed_command_publisher.publish(gamepad.speed_command)
+    estop_publisher.publish(gamepad.estop_flagged)
     if FLAGS.publish_gaits:
       gait_type_publisher.publish(gamepad.gait_command)
     rate.sleep()
