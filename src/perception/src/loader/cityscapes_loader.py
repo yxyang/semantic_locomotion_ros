@@ -6,8 +6,8 @@ import numpy as np
 from PIL import Image
 from torch.utils import data
 
-from semantic_locomotion.segmentation.utils import recursive_glob
-from semantic_locomotion.segmentation.augmentations import Compose, RandomHorizontallyFlip, RandomRotate, Scale
+from utils import recursive_glob
+from augmentations import Compose, RandomHorizontallyFlip, RandomRotate, Scale
 
 
 class cityscapesLoader(data.Dataset):

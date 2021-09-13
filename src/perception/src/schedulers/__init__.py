@@ -3,7 +3,7 @@ import logging
 
 from torch.optim.lr_scheduler import MultiStepLR, ExponentialLR, CosineAnnealingLR
 
-from semantic_locomotion.segmentation.schedulers.schedulers import WarmUpLR, ConstantLR, PolynomialLR
+from schedulers.schedulers import WarmUpLR, ConstantLR, PolynomialLR
 
 logger = logging.getLogger("ptsemseg")
 

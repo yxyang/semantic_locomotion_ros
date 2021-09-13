@@ -2,7 +2,7 @@
 import logging
 import functools
 
-from semantic_locomotion.segmentation.loss.loss import (
+from loss.loss import (
     cross_entropy2d,
     bootstrapped_cross_entropy2d,
     multi_scale_cross_entropy2d,
