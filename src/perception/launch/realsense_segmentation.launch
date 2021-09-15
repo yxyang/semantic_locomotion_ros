@@ -1,8 +1,5 @@
 <launch>
-  <include file="$(find realsense2_camera)/launch/rs_camera.launch" />
-  <param name="color_width" value="640"/>
-  <param name="color_height" value="480"/>
-  <param name="color_fps" value="30"/>
+  <node pkg="perception" type="realsense_camera_capture.py" name="realsense_camera_capture" />
   <node pkg="perception" type="fixed_region_mapper.py" name="fixed_region_mapper" />
   <node pkg="image_transport" type="republish" name="republish_segmentation" args="raw in:=/perception/segmentation_map out:=/perception/segmentation_map_repub" />
 </launch>

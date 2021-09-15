@@ -23,7 +23,7 @@ def image_callback(image):
 def main(argv):
   del argv  # unused
   mapper = FixedRegionMapper()
-  rospy.Subscriber("/camera/color/image_raw", Image, mapper.set_camera_image)
+  rospy.Subscriber("/perception/camera_image", Image, mapper.set_camera_image)
 
   segmentation_map_publisher = rospy.Publisher('/perception/segmentation_map',
                                                Image,

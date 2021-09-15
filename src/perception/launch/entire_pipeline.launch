@@ -1,10 +1,5 @@
 <launch>
-  <include file="$(find realsense2_camera)/launch/rs_camera.launch" />
-  <param name="color_width" value="640"/>
-  <param name="color_height" value="480"/>
-  <param name="color_fps" value="30"/>
-  <node pkg="perception" type="fixed_region_mapper.py" name="fixed_region_mapper" />
-  <node pkg="image_transport" type="republish" name="republish_segmentation" args="raw in:=/perception/segmentation_map out:=/perception/segmentation_map_repub" />
+  <include file="$(find perception)/launch/realsense_segmentation.launch" />
   <node pkg="gamepad_controller" type="gamepad_reader.py" name="gamepad_controller" />
   <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=True" />
   <node pkg="info_publisher" type="info_publisher.py" name="info_publisher" />
