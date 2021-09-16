@@ -27,7 +27,7 @@ def main(_):
                                            Image,
                                            queue_size=1)
   rospy.init_node('realsense_camera_capture', anonymous=True)
-  rate = rospy.Rate(10)
+  rate = rospy.Rate(FLAGS.frame_rate)
   while not rospy.is_shutdown():
     frames = pipeline.wait_for_frames()
     color_frame = frames.get_color_frame()
