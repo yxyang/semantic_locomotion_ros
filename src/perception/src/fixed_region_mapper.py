@@ -33,7 +33,7 @@ def main(argv):
   rospy.init_node("segmentation", anonymous=True)
   rate = rospy.Rate(10)
   while not rospy.is_shutdown():
-    if mapper.camera_image is not None:
+    if mapper.image_array is not None:
       score, segmentation_map = mapper.get_segmentation_result()
       segmentation_map_publisher.publish(segmentation_map)
       traversability_score_publisher.publish(score)

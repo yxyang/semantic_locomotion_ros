@@ -105,6 +105,10 @@ class FixedRegionMapper:
   def camera_image(self):
     return self._camera_image
 
+  @property
+  def image_array(self):
+    return self._image_array
+
   def set_camera_image(self, image):
     self._camera_image = image
     self._image_height = image.height
