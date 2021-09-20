@@ -88,12 +88,12 @@ class FixedRegionMapper:
 
   def get_segmentation_result(self) -> Tuple[np.ndarray, float]:
     segmentation_map = self._compute_segmentation_map()
-    mask, boundary = self._get_segmentation_mask()
+    mask, _ = self._get_segmentation_mask()
     rgb_segmentation_map = _convert_segmentation_map(segmentation_map)
     traversability_score = np.sum(mask * segmentation_map) / np.sum(mask)
 
     # disp_image = np.concatenate((self._image_array, rgb_segmentation_map),
-                                # axis=1)
+    # axis=1)
     # boundary = np.concatenate((boundary, boundary), axis=1)
     # boundary = np.stack((boundary, boundary, boundary), axis=-1)
     visualization = (np.array(rgb_segmentation_map) * 255).astype(np.uint8)
