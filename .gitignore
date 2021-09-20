@@ -1,3 +1,11 @@
+# ROS Libraries that were compiled from source in TX2
+src/compressed_depth_image_transport
+src/compressed_image_transport
+src/ddynamic_reconfigure
+src/image_transport_plugins
+src/ros_numpy
+src/theora_image_transport
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

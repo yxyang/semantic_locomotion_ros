@@ -2682,7 +2682,7 @@ class GamePad(InputDevice):
         return self.__device_number
 
     def __iter__(self):
-        while not rospy.is_shutdown():
+        while True:
             if WIN:
                 self.__check_state()
             event = self._do_iter()

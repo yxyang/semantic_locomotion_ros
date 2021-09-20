@@ -92,11 +92,11 @@ class FixedRegionMapper:
     rgb_segmentation_map = _convert_segmentation_map(segmentation_map)
     traversability_score = np.sum(mask * segmentation_map) / np.sum(mask)
 
-    disp_image = np.concatenate((self._image_array, rgb_segmentation_map),
-                                axis=1)
-    boundary = np.concatenate((boundary, boundary), axis=1)
-    boundary = np.stack((boundary, boundary, boundary), axis=-1)
-    visualization = (np.array(disp_image + boundary) * 255).astype(np.uint8)
+    # disp_image = np.concatenate((self._image_array, rgb_segmentation_map),
+                                # axis=1)
+    # boundary = np.concatenate((boundary, boundary), axis=1)
+    # boundary = np.stack((boundary, boundary, boundary), axis=-1)
+    visualization = (np.array(rgb_segmentation_map) * 255).astype(np.uint8)
     return traversability_score, ros_numpy.msgify(Image,
                                                   visualization,
                                                   encoding="rgb8")
