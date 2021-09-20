@@ -19,8 +19,14 @@ class ImageLogger:
   """Log segmentation results to file."""
   def __init__(self):
     self._bridge = CvBridge()
+    self._camera_image = None
+
+  def record_camera_image(self, image):
+    self._camera_image = image
 
   def record_segmentation(self, segmentation):
+    if self._camera_image is None:
+      return
     filename_postfix = datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')
     full_dir = os.path.join(
         FLAGS.logdir, '{}_{}.png'.format('segmentation', filename_postfix))
@@ -29,6 +35,12 @@ class ImageLogger:
     cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
     cv2.imwrite(full_dir, cv_image)
 
+    full_dir = os.path.join(FLAGS.logdir,
+                            '{}_{}.png'.format('camera', filename_postfix))
+    cv_image = self._bridge.imgmsg_to_cv2(self._camera_image,
+                                          desired_encoding='passthrough')
+    cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
+    cv2.imwrite(full_dir, cv_image)
 
 def main(argv):
   del argv  # unused
@@ -37,6 +49,8 @@ def main(argv):
     os.makedirs(FLAGS.logdir)
 
   image_logger = ImageLogger()
+  rospy.Subscriber("/perception/camera_image", Image,
+                   image_logger.record_camera_image)
   rospy.Subscriber("/perception/segmentation_map", Image,
                    image_logger.record_segmentation)
   rospy.init_node("image_logger", anonymous=True)

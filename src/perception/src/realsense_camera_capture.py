@@ -9,7 +9,6 @@ import pyrealsense2 as rs
 import ros_numpy
 import rospy
 from sensor_msgs.msg import Image
-import time
 
 flags.DEFINE_integer('frame_width', 640, 'frame width.')
 flags.DEFINE_integer('frame_height', 360, 'frame height.')
@@ -18,8 +17,6 @@ FLAGS = flags.FLAGS
 
 
 def main(_):
-  # Sleep until other nodes are ready.
-  time.sleep(20)
   pipeline = rs.pipeline()
   config = rs.config()
   config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8,
