@@ -1,5 +1,7 @@
 <launch>
   <node pkg="perception" type="realsense_camera_capture.py" name="realsense_camera_capture" />
   <node pkg="perception" type="fixed_region_mapper.py" name="fixed_region_mapper" />
-  <node pkg="image_transport" type="republish" name="republish_segmentation" args="raw in:=/perception/segmentation_map out:=/perception/segmentation_map_repub" />
+  <node pkg="image_transport" type="republish" name="republish_segmentation" args="raw in:=/perception/segmentation_map compressed out:=/perception/segmentation_map_repub" />
+  <node pkg="image_transport" type="republish" name="republish_camera" args="raw in:=/perception/camera_image compressed out:=/perception/camera_image_repub" />
 </launch>
+
