@@ -44,7 +44,7 @@ def main(_):
                                             queue_size=1)
   estop_publisher = rospy.Publisher('estop', Bool, queue_size=1)
   robot_state_listener = RobotStateListener()
-  rospy.Subscriber("robot_state", robot_state, robot_state_listener.callback)
+  rospy.Subscriber('robot_state', robot_state, robot_state_listener.callback)
   if FLAGS.publish_gaits:
     gait_type_publisher = rospy.Publisher('gait_type', gait_type, queue_size=1)
   rospy.init_node('gamepad_controller', anonymous=True)
@@ -52,7 +52,7 @@ def main(_):
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
     if not robot_state_listener.is_safe:
-      rospy.loginfo("Estop automatically flagged.")
+      rospy.loginfo('Estop automatically flagged.')
       gamepad.flag_estop()
     controller_mode_publisher.publish(gamepad.mode_command)
     speed_command_publisher.publish(gamepad.speed_command)
