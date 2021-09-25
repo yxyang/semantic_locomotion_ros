@@ -170,19 +170,28 @@ class TorqueStanceLegController:
     # print("Com RPY: {}".format(com_roll_pitch_yaw))
     # print("Com pos: {}".format(com_position))
     # print("Com Vel: {}".format(
-    #         self._state_estimator.com_velocity_ground_frame))
+    #     self._state_estimator.com_velocity_ground_frame))
     # print("Ground orientation_world_frame: {}".format(
     #     p.getEulerFromQuaternion(
     #         self._state_estimator.ground_orientation_world_frame)))
     # print("Gravity projection: {}".format(gravity_projection_vec))
     # print("Com RPY Rate: {}".format(self._robot.base_rpy_rate))
+    # print("contact_estimates: {}".format(
+    #     np.asarray(contact_estimates, dtype=np.float64).flatten()))
+    # print("Contacts: {}".format(foot_contact_state))
+    # print("Foot positions: {}".format(
+    #     np.array(self._robot.foot_positions_in_base_frame, dtype=np.float64)))
+    # print("Ground rpy: {}".format(
+    #     p.getEulerFromQuaternion(
+    #         self._state_estimator.ground_orientation_world_frame)))
+    # print("Desired velocity: {}".format(desired_com_velocity))
     p.submitProfileTiming("predicted_contact_forces")
     predicted_contact_forces = self._cpp_mpc.compute_contact_forces(
         com_position,  #com_position
         np.asarray(self._state_estimator.com_velocity_ground_frame,
                    dtype=np.float64),  #com_velocity
         np.array(com_roll_pitch_yaw, dtype=np.float64),  #com_roll_pitch_yaw
-        gravity_projection_vec,  # Normal Vector of ground
+        gravity_projection_vec,  # Gravity projection vector
         # Angular velocity in the yaw aligned world frame is actually different
         # from rpy rate. We use it here as a simple approximation.
         # np.asarray(self._state_estimator.com_rpy_rate_ground_frame,
@@ -205,9 +214,9 @@ class TorqueStanceLegController:
     # y_dim = x_dim + 1
     # z_dim = y_dim + 1
 
-    # logging.info("X_forces: {}".format(-sol[:5, x_dim]))
-    # logging.info("Y_forces: {}".format(-sol[:5, y_dim]))
-    # logging.info("Z_forces: {}".format(-sol[:5, z_dim]))
+    # print("X_forces: {}".format(-sol[:5, x_dim]))
+    # print("Y_forces: {}".format(-sol[:5, y_dim]))
+    # print("Z_forces: {}".format(-sol[:5, z_dim]))
     # import pdb
     # pdb.set_trace()
     # input("Any Key...")
@@ -234,3 +243,12 @@ class TorqueStanceLegController:
                                         desired_extra_torque=torque)
     # print("After IK: {}".format(time.time() - start_time))
     return action, contact_forces
+
+  def update_mpc_config(self, mpc_friction_coef: float, mpc_mass: float,
+                        mpc_inertia: Sequence[float],
+                        mpc_weight: Sequence[float]) -> None:
+    self._friction_coeffs = np.ones(4) * mpc_friction_coef
+    self._body_mass = mpc_mass
+    self._body_inertia_list = mpc_inertia
+    self._weights_list = mpc_weight
+    self.reset(None)

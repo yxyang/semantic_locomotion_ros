@@ -23,17 +23,8 @@ from robots import a1
 from robots import a1_robot
 from robots.motors import MotorCommand
 from robots.motors import MotorControlMode
-
-# class controller_mode(enum.Enum):
-#   DOWN = 1
-#   STAND = 2
-#   WALK = 3
-#   TERMINATE = 4
-
-# class gait_type(enum.Enum):
-#   CRAWL = 1
-#   TROT = 2
-#   FLYTROT = 3
+from worlds import abstract_world
+from worlds import stair_world
 
 
 def get_sim_conf():
@@ -55,10 +46,12 @@ class LocomotionController(object):
   individual subcomponent.
 
   """
-  def __init__(self,
-               use_real_robot: bool = False,
-               show_gui: bool = False,
-               logdir: str = 'logs/'):
+  def __init__(
+      self,
+      use_real_robot: bool = False,
+      show_gui: bool = False,
+      logdir: str = 'logs/',
+      world_class: abstract_world.AbstractWorld = stair_world.StairWorld):
     """Initializes the class.
 
     Args:
@@ -72,6 +65,7 @@ class LocomotionController(object):
     """
     self._use_real_robot = use_real_robot
     self._show_gui = show_gui
+    self._world_class = world_class
     self._setup_robot_and_controllers()
     self.reset_robot()
     self.reset_controllers()
@@ -113,25 +107,8 @@ class LocomotionController(object):
     p.setTimeStep(0.002)
     p.setGravity(0, 0, -9.8)
     p.setPhysicsEngineParameter(enableConeFriction=0)
-    self.ground_id = p.loadURDF('plane.urdf')
-    num_steps = 1
-    stair_height = 0.08
-    stair_length = 1
-    stair_collision_id = p.createCollisionShape(
-        p.GEOM_BOX, halfExtents=[stair_length / 2, 1, stair_height / 2])
-    stair_visual_id = p.createVisualShape(
-        p.GEOM_BOX, halfExtents=[stair_length / 2, 1, stair_height / 2])
-
-    first_step_at = 1
-    curr_x, curr_z = first_step_at, stair_height / 2
-    for _ in range(num_steps):
-      stair_id = p.createMultiBody(baseMass=0,
-                                   baseCollisionShapeIndex=stair_collision_id,
-                                   baseVisualShapeIndex=stair_visual_id,
-                                   basePosition=[curr_x, 0, curr_z])
-      p.changeDynamics(stair_id, -1, lateralFriction=1)
-      curr_x += stair_length
-      curr_z += stair_height
+    self._world_builder = self._world_class(self.pybullet_client)
+    self.ground_id = self._world_builder.build_world()
 
     # Construct robot class:
     if self._use_real_robot:
@@ -328,6 +305,9 @@ class LocomotionController(object):
     self._swing_controller.foot_height = self._gait_config.foot_clearance_max
     self._swing_controller.foot_landing_clearance = \
       self._gait_config.foot_clearance_land
+    self._stance_controller.update_mpc_config(
+        self._gait_config.mpc_foot_friction, self._gait_config.mpc_body_mass,
+        self._gait_config.mpc_body_inertia, self._gait_config.mpc_weight)
 
   def run(self):
     rospy.loginfo("Low level thread started...")
@@ -401,21 +381,3 @@ class LocomotionController(object):
     self._swing_controller.desired_twisting_speed = desired_rot_speed
     self._stance_controller.desired_speed = desired_lin_speed
     self._stance_controller.desired_twisting_speed = desired_rot_speed
-
-  def set_gait_parameters(self, gait_parameters):
-    raise NotImplementedError()
-
-  def set_qp_weight(self, qp_weight):
-    raise NotImplementedError()
-
-  def set_mpc_mass(self, mpc_mass):
-    raise NotImplementedError()
-
-  def set_mpc_inertia(self, mpc_inertia):
-    raise NotImplementedError()
-
-  def set_mpc_foot_friction(self, mpc_foot_friction):
-    raise NotImplementedError()
-
-  def set_foot_landing_clearance(self, foot_landing_clearance):
-    raise NotImplementedError()

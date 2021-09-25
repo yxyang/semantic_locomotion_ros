@@ -72,7 +72,8 @@ class Gamepad:
     self.read_thread.start()
     print("To confirm that you are using the correct gamepad, press down the "
           "LEFT joystick to continue...")
-    while True:
+    start_time = time.time()
+    while time.time() - start_time < 5:
       if self._lj_pressed:
         return
       time.sleep(0.01)

@@ -13,7 +13,8 @@ ignore=
   third_party,
   fixed_region_mapper_service_pb2.py,
   fixed_region_mapper_service_pb2_grpc.py,
-  setup.py
+  setup.py,
+  src/build
 
 
 # Add files or directories matching the regex patterns to the blacklist. The
