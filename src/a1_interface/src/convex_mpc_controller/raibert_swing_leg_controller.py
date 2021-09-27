@@ -42,60 +42,61 @@ def _gen_parabola(phase: float, start: float, mid: float, end: float) -> float:
   return coef_a * phase**2 + coef_b * phase + coef_c
 
 
+# def _gen_swing_foot_trajectory(input_phase: float, start_pos: Sequence[float],
+#                                end_pos: Sequence[float],
+#                                foot_height: float) -> Tuple[float]:
+#   """Generates the swing trajectory using a parabola.
+
+#   Args:
+#     input_phase: the swing/stance phase value between [0, 1].
+#     start_pos: The foot's position at the beginning of swing cycle.
+#     end_pos: The foot's desired position at the end of swing cycle.
+
+#   Returns:
+#     The desired foot position at the current phase.
+#   """
+#   # We augment the swing speed using the below formula. For the first half of
+#   # the swing cycle, the swing leg moves faster and finishes 80% of the full
+#   # swing trajectory. The rest 20% of trajectory takes another half swing
+#   # cycle. Intuitely, we want to move the swing foot quickly to the target
+#   # landing location and stay above the ground, in this way the control is more
+#   # robust to perturbations to the body that may cause the swing foot to drop
+#   # onto the ground earlier than expected. This is a common practice similar
+#   # to the MIT cheetah and Marc Raibert's original controllers.
+#   phase = input_phase
+#   if input_phase <= 0.5:
+#     phase = 0.5 * math.sin(input_phase * math.pi)
+#   else:
+#     phase = 0.5 + (input_phase - 0.5) * 1
+
+#   x = (1 - phase) * start_pos[0] + phase * end_pos[0]
+#   y = (1 - phase) * start_pos[1] + phase * end_pos[1]
+#   mid = max(end_pos[2], start_pos[2]) + foot_height
+#   z = _gen_parabola(phase, start_pos[2], mid, end_pos[2])
+
+#   # PyType detects the wrong return type here.
+#   return (x, y, z)  # pytype: disable=bad-return-type
+
+
+def cubic_bezier(x0: Sequence[float], x1: Sequence[float],
+                 t: float) -> Sequence[float]:
+  progress = t**3 + 3 * t**2 * (1 - t)
+  return x0 + progress * (x1 - x0)
+
 def _gen_swing_foot_trajectory(input_phase: float, start_pos: Sequence[float],
                                end_pos: Sequence[float],
                                foot_height: float) -> Tuple[float]:
-  """Generates the swing trajectory using a parabola.
-
-  Args:
-    input_phase: the swing/stance phase value between [0, 1].
-    start_pos: The foot's position at the beginning of swing cycle.
-    end_pos: The foot's desired position at the end of swing cycle.
-
-  Returns:
-    The desired foot position at the current phase.
-  """
-  # We augment the swing speed using the below formula. For the first half of
-  # the swing cycle, the swing leg moves faster and finishes 80% of the full
-  # swing trajectory. The rest 20% of trajectory takes another half swing
-  # cycle. Intuitely, we want to move the swing foot quickly to the target
-  # landing location and stay above the ground, in this way the control is more
-  # robust to perturbations to the body that may cause the swing foot to drop
-  # onto the ground earlier than expected. This is a common practice similar
-  # to the MIT cheetah and Marc Raibert's original controllers.
-  phase = input_phase
-  if input_phase <= 0.5:
-    phase = 0.8 * math.sin(input_phase * math.pi)
+  mid_z = max(end_pos[2], start_pos[2]) + foot_height
+  mid_pos = (start_pos + end_pos) / 2
+  mid_pos[2] = mid_z
+  cutoff_phase = 0.4
+  if input_phase < cutoff_phase:
+    t = input_phase / cutoff_phase
+    foot_pos = cubic_bezier(start_pos, mid_pos, t)
   else:
-    phase = 0.8 + (input_phase - 0.5) * 0.4
-
-  x = (1 - phase) * start_pos[0] + phase * end_pos[0]
-  y = (1 - phase) * start_pos[1] + phase * end_pos[1]
-  mid = max(end_pos[2], start_pos[2]) + foot_height
-  z = _gen_parabola(phase, start_pos[2], mid, end_pos[2])
-
-  # PyType detects the wrong return type here.
-  return (x, y, z)  # pytype: disable=bad-return-type
-
-
-# def cubic_bezier(x0: Sequence[float], x1: Sequence[float],
-#                  t: float) -> Sequence[float]:
-#   progress = t**3 + 3 * t**2 * (1 - t)
-#   return x0 + progress * (x1 - x0)
-
-# def _gen_swing_foot_trajectory(input_phase: float, start_pos: Sequence[float],
-#                                end_pos: Sequence[float]) -> Tuple[float]:
-#   max_clearance = 0.10
-#   mid_z = max(end_pos[2], start_pos[2]) + max_clearance
-#   mid_pos = (start_pos + end_pos) / 2
-#   mid_pos[2] = mid_z
-#   if input_phase < 0.5:
-#     t = input_phase * 2
-#     foot_pos = cubic_bezier(start_pos, mid_pos, t)
-#   else:
-#     t = input_phase * 2 - 1
-#     foot_pos = cubic_bezier(mid_pos, end_pos, t)
-#   return foot_pos
+    t = (input_phase - cutoff_phase) / (1 - cutoff_phase)
+    foot_pos = cubic_bezier(mid_pos, end_pos, t)
+  return foot_pos
 
 
 class RaibertSwingLegController:

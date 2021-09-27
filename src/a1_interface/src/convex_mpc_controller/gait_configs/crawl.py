@@ -5,8 +5,8 @@ import numpy as np
 
 def get_config():
   config = ml_collections.ConfigDict()
-  config.max_forward_speed = 0.3
-  config.max_side_speed = 0.2
+  config.max_forward_speed = 0.7
+  config.max_side_speed = 0.4
   config.max_rot_speed = 0.6
 
   config.gait_parameters = [1.5, np.pi, np.pi / 2, np.pi * 3 / 2, 0.26]
@@ -19,6 +19,6 @@ def get_config():
   config.mpc_weight = (1., 1., 0, 0, 0, 10, 0., 0., .1, .1, .1, .0, 0)
 
   # Swing foot settings
-  config.foot_clearance_max = 0.17
+  config.foot_clearance_max = 0.13
   config.foot_clearance_land = -0.01
   return config
