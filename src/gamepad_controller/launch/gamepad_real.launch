@@ -1,6 +1,6 @@
 <launch>
   <node pkg="gamepad_controller" type="gamepad_reader.py" name="gamepad_controller" />
-  <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=False --use_real_robot=True" />
+  <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=False --use_real_robot=True --logdir=logs" />
   <node pkg="info_publisher" type="info_publisher.py" name="info_publisher" />
   <node pkg="info_publisher" type="image_logger.py" name="image_logger" />
 </launch>
