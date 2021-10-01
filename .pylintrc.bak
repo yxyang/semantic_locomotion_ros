@@ -9,13 +9,18 @@
 
 # Add files or directories to the blacklist. They should be base names, not
 # paths.
-ignore=third_party,
-       setup.py,
-       hardnet.py
+ignore=
+  third_party,
+  fixed_region_mapper_service_pb2.py,
+  fixed_region_mapper_service_pb2_grpc.py,
+  setup.py,
+  src/build
+
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
 ignore-patterns=
+
 
 # Pickle collected data for later comparisons.
 persistent=no
@@ -58,19 +63,22 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=apply-builtin,
+disable=abstract-method,
+        apply-builtin,
+        arguments-differ,
+        attribute-defined-outside-init,
         backtick,
         bad-option-value,
+        basestring-builtin,
         buffer-builtin,
         c-extension-no-member,
+        consider-using-enumerate,
         cmp-builtin,
         cmp-method,
         coerce-builtin,
         coerce-method,
         delslice-method,
         div-method,
-        duplicate-code,
-        eq-without-hash,
         execfile-builtin,
         file-builtin,
         filter-builtin-not-iterating,
@@ -79,18 +87,22 @@ disable=apply-builtin,
         global-statement,
         hex-method,
         idiv-method,
-        implicit-str-concat-in-sequence,
         import-error,
         import-self,
         import-star-module-level,
+        inconsistent-return-statements,
         input-builtin,
         intern-builtin,
+        invalid-name,
         invalid-str-codec,
         locally-disabled,
-        logging-format-interpolation,
+        invalid-unary-operand-type,
         long-builtin,
         long-suffix,
+        logging-format-interpolation,
         map-builtin-not-iterating,
+        misplaced-comparison-constant,
+        missing-function-docstring,
         metaclass-assignment,
         next-method-called,
         next-method-defined,
@@ -99,6 +111,7 @@ disable=apply-builtin,
         no-else-continue,
         no-else-raise,
         no-else-return,
+        no-init,  # added
         no-member,
         no-name-in-module,
         no-self-use,
@@ -115,7 +128,6 @@ disable=apply-builtin,
         raw_input-builtin,
         rdiv-method,
         reduce-builtin,
-        relative-import,
         reload-builtin,
         round-builtin,
         setslice-method,
@@ -130,14 +142,17 @@ disable=apply-builtin,
         too-many-branches,
         too-many-instance-attributes,
         too-many-locals,
+        too-many-nested-blocks,
         too-many-public-methods,
         too-many-return-statements,
         too-many-statements,
         trailing-newlines,
         unichr-builtin,
         unicode-builtin,
+        unnecessary-pass,
         unpacking-in-except,
         useless-else-on-loop,
+        useless-object-inheritance,
         useless-suppression,
         using-cmp-argument,
         xrange-builtin,
@@ -303,6 +318,13 @@ expected-line-ending-format=
 notes=TODO
 
 
+[STRING]
+
+# This flag controls whether inconsistent-quotes generates a warning when the
+# character used as a quote delimiter is used inconsistently within a module.
+check-quote-consistency=yes
+
+
 [VARIABLES]
 
 # Tells whether we should check for unused import in __init__ files.
@@ -329,7 +351,7 @@ redefining-builtins-modules=six,six.moves,past.builtins,future.builtins,functool
 
 # Logging modules to check that the string format arguments are in logging
 # function parameter format
-logging-modules=logging,absl.logging,tensorflow.google.logging
+logging-modules=logging,absl.logging,tensorflow.io.logging
 
 
 [SIMILARITIES]

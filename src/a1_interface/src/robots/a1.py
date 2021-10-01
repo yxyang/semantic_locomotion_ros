@@ -1,9 +1,10 @@
 """Base class for all robots."""
-import ml_collections
-import numpy as np
 from typing import Any
 from typing import Sequence
 from typing import Tuple
+
+import ml_collections
+import numpy as np
 
 from robots.motors import MotorControlMode
 from robots.motors import MotorGroup

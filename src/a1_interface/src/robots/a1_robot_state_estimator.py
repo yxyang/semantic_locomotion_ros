@@ -37,6 +37,8 @@ class A1RobotStateEstimator:
     self._initial_variance = initial_variance
     self._accelerometer_variance = accelerometer_variance
     self._sensor_variance = sensor_variance
+    self._last_timestamp = 0
+    self._estimated_velocity = np.zeros(3)
     self.filter.P = np.eye(3) * self._initial_variance  # State covariance
     self.filter.Q = np.eye(3) * accelerometer_variance
     self.filter.R = np.eye(3) * sensor_variance
@@ -65,6 +67,7 @@ class A1RobotStateEstimator:
     return delta_time_s
 
   def _get_velocity_observation(self):
+    """Computes velocity estimation from contact feet."""
     base_orientation = self.robot.base_orientation_quat
     rot_mat = self.robot.pybullet_client.getMatrixFromQuaternion(
         base_orientation)

@@ -1,9 +1,10 @@
 """Training schedulers."""
 import logging
 
-from torch.optim.lr_scheduler import MultiStepLR, ExponentialLR, CosineAnnealingLR
+from torch.optim.lr_scheduler import (CosineAnnealingLR, ExponentialLR,
+                                      MultiStepLR)
 
-from schedulers.schedulers import WarmUpLR, ConstantLR, PolynomialLR
+from schedulers.schedulers import ConstantLR, PolynomialLR, WarmUpLR
 
 logger = logging.getLogger("ptsemseg")
 
@@ -17,12 +18,14 @@ key2scheduler = {
 
 
 def get_scheduler(optimizer, scheduler_dict):
+  """Returns desired scheduler."""
   if scheduler_dict is None:
     logger.info("Using No LR Scheduling")
     return ConstantLR(optimizer)
 
   s_type = scheduler_dict["name"]
-  scheduler_dict.pop("name")
+  with scheduler_dict.unlocked():
+    del scheduler_dict["name"]
 
   logging.info("Using {} scheduler with {} params".format(
       s_type, scheduler_dict))
@@ -38,9 +41,10 @@ def get_scheduler(optimizer, scheduler_dict):
         warmup_dict["warmup_iters"], warmup_dict["gamma"],
         warmup_dict["mode"]))
 
-    scheduler_dict.pop("warmup_iters", None)
-    scheduler_dict.pop("warmup_mode", None)
-    scheduler_dict.pop("warmup_factor", None)
+    with scheduler_dict.unlocked():
+      del scheduler_dict["warmup_iters"]
+      del scheduler_dict["warmup_mode"]
+      del scheduler_dict["warmup_factor"]
 
     base_scheduler = key2scheduler[s_type](optimizer, **scheduler_dict)
     return WarmUpLR(optimizer, base_scheduler, **warmup_dict)

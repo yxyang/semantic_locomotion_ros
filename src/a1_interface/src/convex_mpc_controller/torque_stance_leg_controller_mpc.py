@@ -5,12 +5,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-# from absl import logging
 from typing import Any, Sequence, Tuple
+import sys
 
 import numpy as np
 import pybullet as p  # pytype: disable=import-error
-import sys
 
 from robots.motors import MotorCommand
 from convex_mpc_controller import gait_generator as gait_generator_lib

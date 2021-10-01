@@ -1,23 +1,14 @@
 """A collection of data augmentation methods."""
 import logging
-from augmentations.augmentations import (
-    AdjustContrast,
-    AdjustGamma,
-    AdjustBrightness,
-    AdjustSaturation,
-    AdjustHue,
-    RandomCrop,
-    RandomHorizontallyFlip,
-    RandomVerticallyFlip,
-    Scale,
-    RandomScaleCrop,
-    RandomSized,
-    RandomSizedCrop,
-    RandomRotate,
-    RandomTranslate,
-    CenterCrop,
-    Compose,
-)
+
+from augmentations.augmentations import (AdjustBrightness, AdjustContrast,
+                                         AdjustGamma, AdjustHue,
+                                         AdjustSaturation, CenterCrop, Compose,
+                                         RandomCrop, RandomHorizontallyFlip,
+                                         RandomRotate, RandomScaleCrop,
+                                         RandomSized, RandomSizedCrop,
+                                         RandomTranslate, RandomVerticallyFlip,
+                                         Scale)
 
 logger = logging.getLogger("ptsemseg")
 

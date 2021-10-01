@@ -4,6 +4,7 @@ import numpy as np
 
 
 def get_config():
+  """Configurations for fly-trotting gait."""
   config = ml_collections.ConfigDict()
   config.max_forward_speed = 2.5
   config.max_side_speed = 1.

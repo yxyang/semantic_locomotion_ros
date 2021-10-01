@@ -19,15 +19,15 @@ class LegState(enum.Enum):
   LOSE_CONTACT = 3
 
 
-class GaitGenerator(object):  # pytype: disable=ignored-metaclass
+class GaitGenerator:  # pytype: disable=ignored-metaclass
   """Generates the leg swing/stance pattern for the robot."""
 
   __metaclass__ = abc.ABCMeta
 
   @abc.abstractmethod
-  def reset(self, current_time):
+  def reset(self):
     pass
 
   @abc.abstractmethod
-  def update(self, current_time):
+  def update(self):
     pass

@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 """Example for real-time semantic segmentation using realsense camera."""
-from absl import app
-from absl import flags
-
 import cv2
 import numpy as np
 import pyrealsense2 as rs
 import ros_numpy
 import rospy
+from absl import app, flags
 from sensor_msgs.msg import Image
 
 flags.DEFINE_integer('frame_width', 640, 'frame width.')

@@ -1,9 +1,10 @@
 """Base class for all robots."""
-import ml_collections
-import numpy as np
 from typing import Any
 from typing import Optional
 from typing import Tuple
+
+import ml_collections
+import numpy as np
 
 from robots import kinematics
 from robots.motors import MotorCommand
@@ -49,6 +50,9 @@ class Robot:
     self._num_motors = self._motor_group.num_motors if self._motor_group else 0
     self._motor_torques = None
     self._urdf_path = urdf_path
+    self._chassis_link_ids = [-1]
+    self._motor_joint_ids = []
+    self._foot_link_ids = []
     self._load_robot_urdf(self._urdf_path)
     self._step_counter = 0
     self._foot_contact_history = self.foot_positions_in_base_frame.copy()
@@ -57,6 +61,7 @@ class Robot:
     self.reset()
 
   def _load_robot_urdf(self, urdf_path: str) -> None:
+    """Loads the robot's URDF file to pybullet."""
     # TODO: how do we want to check for missing attributes when not using
     # configs? One way to do it:
     if not self._pybullet_client:
@@ -138,6 +143,7 @@ class Robot:
     self._step_counter = 0
 
   def _apply_action(self, action, motor_control_mode=None) -> None:
+    """Applies given action to the robot."""
     torques, observed_torques = self._motor_group.convert_to_torque(
         action, self.motor_angles, self.motor_velocities, motor_control_mode)
     # import pdb
@@ -151,6 +157,7 @@ class Robot:
     self._motor_torques = observed_torques
 
   def _update_contact_history(self):
+    """Update the recorded contact position of the robot."""
     dt = self.time_since_reset - self._last_timestamp
     self._last_timestamp = self.time_since_reset
     base_orientation = self.base_orientation_quat
@@ -175,6 +182,7 @@ class Robot:
 
   @property
   def foot_contacts(self):
+    """Returns the contact state of the robot's feet."""
     all_contacts = self._pybullet_client.getContactPoints(bodyA=self.quadruped)
 
     contacts = [False, False, False, False]
@@ -230,6 +238,11 @@ class Robot:
 
   @property
   def base_rpy_rate(self):
+    """Computes robot's angular velocity.
+
+    This function first queries the angular velocity in global frame, and
+    converts it to the local frame.
+    """
     angular_velocity = self._pybullet_client.getBaseVelocity(self.quadruped)[1]
     orientation = self.base_orientation_quat
     _, orientation_inversed = self._pybullet_client.invertTransform(
@@ -265,6 +278,7 @@ class Robot:
                          (leg_id + 1) * motors_per_leg]
 
   def get_motor_angles_from_foot_position(self, leg_id, foot_local_position):
+    """Queries IK to compute motor angle from desired foot position."""
     toe_id = self._foot_link_ids[leg_id]
 
     motors_per_leg = self.num_motors // self.num_legs

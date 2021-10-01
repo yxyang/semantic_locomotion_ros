@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 """Computes traversability score by averaging semantics over fixed region."""
-from absl import app
-
 import cv2
 import numpy as np
+import rospy
+from absl import app
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float32
-import rospy
 
 from fixed_region_mapper_lib import FixedRegionMapper
 

@@ -11,8 +11,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 .idea/
+
+# Training logs
 logs/
 data/
+out_rgb/
+out_predID/
+runs/
+weights/
 
 # C extensions
 *.so

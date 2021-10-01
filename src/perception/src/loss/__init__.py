@@ -1,12 +1,9 @@
 """Collection of losses."""
-import logging
 import functools
+import logging
 
-from loss.loss import (
-    cross_entropy2d,
-    bootstrapped_cross_entropy2d,
-    multi_scale_cross_entropy2d,
-)
+from loss.loss import (bootstrapped_cross_entropy2d, cross_entropy2d,
+                       multi_scale_cross_entropy2d)
 
 logger = logging.getLogger("ptsemseg")
 
@@ -18,6 +15,7 @@ key2loss = {
 
 
 def get_loss_function(cfg):
+  """Gets loss function from config."""
   if cfg["training"]["loss"] is None:
     logger.info("Using default cross entropy loss")
     return cross_entropy2d

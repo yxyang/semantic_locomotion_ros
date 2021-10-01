@@ -6,9 +6,9 @@ class StairWorld:
   def __init__(self,
                pybullet_client,
                num_steps: int = 10,
-               stair_height: float = 0.05,
-               stair_length: float = 0.13,
-               first_step_at: float = 2):
+               stair_height: float = 0.08,
+               stair_length: float = 0.25,
+               first_step_at: float = 1.):
     self._pybullet_client = pybullet_client
     self._num_steps = num_steps
     self._stair_height = stair_height
@@ -16,6 +16,7 @@ class StairWorld:
     self._first_step_at = first_step_at
 
   def build_world(self):
+    """Builds world with stairs."""
     p = self._pybullet_client
     ground_id = self._pybullet_client.loadURDF('plane.urdf')
     stair_collision_id = p.createCollisionShape(
@@ -33,7 +34,7 @@ class StairWorld:
                                    basePosition=[curr_x, 0, curr_z])
       # Change friction coef to 1 (or anything you want). I think 1 is default
       # but you can play with this value.
-      p.changeDynamics(stair_id, -1, lateralFriction=1)
+      p.changeDynamics(stair_id, -1, lateralFriction=10.)
       curr_x += self._stair_length
       curr_z += self._stair_height
 

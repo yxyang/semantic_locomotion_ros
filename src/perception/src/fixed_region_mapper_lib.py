@@ -1,13 +1,14 @@
 """Decides gait based on average traversability score of a fixed region."""
+import os
+from typing import Tuple
+
 import cv2
 import numpy as np
-import os
 import ros_numpy
 import rospkg
-from sensor_msgs.msg import Image
 import torch
-from typing import Tuple
 import yaml
+from sensor_msgs.msg import Image
 
 from models import get_model
 from utils import convert_state_dict
@@ -30,6 +31,7 @@ class FixedRegionMapper:
     self._last_segmentation_map = None
 
   def _load_segmentation_model(self, cfg_dir: str) -> torch.nn.Module:
+    """Loads the trained segmentation model."""
     rospack = rospkg.RosPack()
     package_path = os.path.join(rospack.get_path('perception'), "src")
 
@@ -48,6 +50,7 @@ class FixedRegionMapper:
     return model
 
   def _get_segmentation_mask(self) -> Tuple[np.ndarray, np.ndarray]:
+    """Computes segmentation mask, which is a fixed region in the image."""
     mask = np.zeros((self._image_height, self._image_width))
     mask_boundary = np.zeros_like(mask)
 
@@ -91,11 +94,6 @@ class FixedRegionMapper:
     mask, _ = self._get_segmentation_mask()
     rgb_segmentation_map = _convert_segmentation_map(segmentation_map)
     traversability_score = np.sum(mask * segmentation_map) / np.sum(mask)
-
-    # disp_image = np.concatenate((self._image_array, rgb_segmentation_map),
-    # axis=1)
-    # boundary = np.concatenate((boundary, boundary), axis=1)
-    # boundary = np.stack((boundary, boundary, boundary), axis=-1)
     visualization = (np.array(rgb_segmentation_map) * 255).astype(np.uint8)
     return traversability_score, ros_numpy.msgify(Image,
                                                   visualization,

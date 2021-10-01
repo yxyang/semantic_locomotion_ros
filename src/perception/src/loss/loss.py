@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 
 def cross_entropy2d(prediction, target, weight=None, size_average=True):
+  """2D cross entropy loss."""
   _, c, h, w = prediction.size()
   _, ht, wt = target.size()
 
@@ -35,20 +36,21 @@ def multi_scale_cross_entropy2d(prediction,
                                 weight=None,
                                 size_average=True,
                                 scale_weight=(1.0, 0.4)):
+  """Multi-scale cross entropy loss."""
   if not isinstance(prediction, tuple):
     return cross_entropy2d(prediction=prediction,
                            target=target,
                            weight=weight,
                            size_average=size_average)
 
-  K = prediction[0].size()[2] * prediction[0].size()[3] // 128
+  k = prediction[0].size()[2] * prediction[0].size()[3] // 128
   loss = 0.0
 
   for i, inp in enumerate(prediction):
     loss = loss + scale_weight[i] * bootstrapped_cross_entropy2d(
         prediction=inp,
         target=target,
-        min_K=K,
+        min_k=k,
         loss_th=loss_th,
         weight=weight)
 
@@ -57,9 +59,11 @@ def multi_scale_cross_entropy2d(prediction,
 
 def bootstrapped_cross_entropy2d(prediction,
                                  target,
-                                 min_K,
+                                 min_k,
                                  loss_th,
-                                 weight=None):
+                                 weight=None,
+                                 size_average=True):
+  """Bootstrapped cross entropy 2D loss."""
   _, _, h, w = prediction.size()
   _, ht, wt = target.size()
   batch_size = prediction.size()[0]
@@ -74,10 +78,11 @@ def bootstrapped_cross_entropy2d(prediction,
 
   def _bootstrap_xentropy_single(prediction,
                                  target,
-                                 K,
+                                 k,
                                  thresh,
-                                 weight=None):
-
+                                 weight=None,
+                                 size_average=True):
+    del size_average # unused
     _, c, _, _ = prediction.size()  # n, c, h, w
     prediction = prediction.transpose(1,
                                       2).transpose(2,
@@ -91,10 +96,10 @@ def bootstrapped_cross_entropy2d(prediction,
                            ignore_index=250)
     sorted_loss, _ = torch.sort(loss, descending=True)
 
-    if sorted_loss[K] > thresh:
+    if sorted_loss[k] > thresh:
       loss = sorted_loss[sorted_loss > thresh]
     else:
-      loss = sorted_loss[:K]
+      loss = sorted_loss[:k]
     reduced_topk_loss = torch.mean(loss)
 
     return reduced_topk_loss
@@ -105,8 +110,9 @@ def bootstrapped_cross_entropy2d(prediction,
     loss += _bootstrap_xentropy_single(
         prediction=torch.unsqueeze(prediction[i], 0),
         target=torch.unsqueeze(target[i], 0),
-        K=min_K,
+        k=min_k,
         thresh=thresh,
         weight=weight,
+        size_average=size_average
     )
   return loss / float(batch_size)

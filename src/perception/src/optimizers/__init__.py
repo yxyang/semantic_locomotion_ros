@@ -1,7 +1,7 @@
 """Collection of network optimizers."""
 import logging
 
-from torch.optim import SGD, Adam, ASGD, Adamax, Adadelta, Adagrad, RMSprop
+from torch.optim import ASGD, SGD, Adadelta, Adagrad, Adam, Adamax, RMSprop
 
 logger = logging.getLogger("ptsemseg")
 
@@ -17,6 +17,7 @@ key2opt = {
 
 
 def get_optimizer(cfg):
+  """Gets optimizer from config."""
   if cfg["training"]["optimizer"] is None:
     logger.info("Using SGD optimizer")
     return SGD

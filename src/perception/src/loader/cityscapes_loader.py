@@ -1,16 +1,17 @@
 """Utility for loading cityscape data."""
 import os
-import torch
-import numpy as np
 
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
 from PIL import Image
 from torch.utils import data
 
-from utils import recursive_glob
 from augmentations import Compose, RandomHorizontallyFlip, RandomRotate, Scale
+from utils import recursive_glob
 
 
-class cityscapesLoader(data.Dataset):
+class CityscapesLoader(data.Dataset):
   """cityscapesLoader
 
     https://www.cityscapes-dataset.com
@@ -56,9 +57,9 @@ class cityscapesLoader(data.Dataset):
       root,
       split="train",
       is_transform=False,
-      img_size=(1024, 2048),
+      image_size=(1024, 2048),
       augmentations=None,
-      img_norm=True,
+      image_norm=True,
       version="cityscapes",
       test_mode=False,
   ):
@@ -67,21 +68,21 @@ class cityscapesLoader(data.Dataset):
         :param root:
         :param split:
         :param is_transform:
-        :param img_size:
+        :param image_size:
         :param augmentations
         """
     self.root = root
     self.split = split
     self.is_transform = is_transform
     self.augmentations = augmentations
-    self.img_norm = img_norm
+    self.image_norm = image_norm
     self.n_classes = 19
-    self.img_size = img_size if isinstance(img_size, tuple) else (img_size,
-                                                                  img_size)
+    self.image_size = image_size if isinstance(
+        image_size, tuple) else (image_size, image_size)
     self.mean = np.array(self.mean_rgb[version])
     self.files = {}
 
-    self.images_base = os.path.join(self.root, "leftImg8bit", self.split)
+    self.images_base = os.path.join(self.root, "leftimage8bit", self.split)
     self.annotations_base = os.path.join(self.root, "gtFine", self.split)
 
     self.files[split] = recursive_glob(rootdir=self.images_base, suffix=".png")
@@ -154,39 +155,39 @@ class cityscapesLoader(data.Dataset):
 
         :param index:
         """
-    img_path = self.files[self.split][index].rstrip()
-    lbl_path = os.path.join(
+    image_path = self.files[self.split][index].rstrip()
+    label_path = os.path.join(
         self.annotations_base,
-        img_path.split(os.sep)[-2],
-        os.path.basename(img_path)[:-15] + "gtFine_labelIds.png",
+        image_path.split(os.sep)[-2],
+        os.path.basename(image_path)[:-15] + "gtFine_labelIds.png",
     )
-    name = img_path.split(os.sep)[-1][:-4] + ".png"
+    label_name = image_path.split(os.sep)[-1][:-4] + ".png"
 
-    img = Image.open(img_path)
-    img = np.array(img, dtype=np.uint8)
+    image = Image.open(image_path)
+    image = np.array(image, dtype=np.uint8)
 
-    lbl = Image.open(lbl_path)
-    lbl = self.encode_segmap(np.array(lbl, dtype=np.uint8))
+    label = Image.open(label_path)
+    label = self.encode_segmap(np.array(label, dtype=np.uint8))
 
     if self.augmentations is not None:
-      img, lbl = self.augmentations(img, lbl)
+      image, label = self.augmentations(image, label)
 
     if self.is_transform:
-      img, lbl = self.transform(img, lbl)
+      image, label = self.transform(image, label)
 
-    return img, lbl, name
+    return image, label, label_name
 
-  def transform(self, img, lbl):
+  def transform(self, image, label):
     """transform
 
-        :param img:
-        :param lbl:
+        :param image:
+        :param label:
         """
-    img = np.array(
-        Image.fromarray(img).resize(
-            (self.img_size[1], self.img_size[0])))  # uint8 with RGB mode
-    img = img[:, :, ::-1]  # RGB -> BGR
-    img = img.astype(np.float64)
+    image = np.array(
+        Image.fromarray(image).resize(
+            (self.image_size[1], self.image_size[0])))  # uint8 with RGB mode
+    image = image[:, :, ::-1]  # RGB -> BGR
+    image = image.astype(np.float64)
 
     value_scale = 255
     mean = [0.406, 0.456, 0.485]
@@ -194,32 +195,34 @@ class cityscapesLoader(data.Dataset):
     std = [0.225, 0.224, 0.229]
     std = [item * value_scale for item in std]
 
-    if self.img_norm:
-      img = (img - mean) / std
+    if self.image_norm:
+      image = (image - mean) / std
 
     # NHWC -> NCHW
-    img = img.transpose(2, 0, 1)
+    image = image.transpose(2, 0, 1)
 
-    classes = np.unique(lbl)
-    lbl = lbl.astype(float)
-    lbl = np.array(
-        Image.fromarray(lbl).resize((self.img_size[1], self.img_size[0]),
-                                    resample=Image.NEAREST))
-    lbl = lbl.astype(int)
+    classes = np.unique(label)
+    label = label.astype(float)
+    label = np.array(
+        Image.fromarray(label).resize((self.image_size[1], self.image_size[0]),
+                                      resample=Image.NEAREST))
+    label = label.astype(int)
 
-    if not np.all(classes == np.unique(lbl)):
+    if not np.all(classes == np.unique(label)):
       print("WARN: resizing labels yielded fewer classes")
 
-    if not np.all(np.unique(lbl[lbl != self.ignore_index]) < self.n_classes):
-      print("after det", classes, np.unique(lbl))
+    if not np.all(
+        np.unique(label[label != self.ignore_index]) < self.n_classes):
+      print("after det", classes, np.unique(label))
       raise ValueError("Segmentation map contained invalid class values")
 
-    img = torch.from_numpy(img).float()
-    lbl = torch.from_numpy(lbl).long()
+    image = torch.from_numpy(image).float()
+    label = torch.from_numpy(label).long()
 
-    return img, lbl
+    return image, label
 
   def decode_segmap(self, temp):
+    """Decodes segmentation class into rgb segmentation map."""
     r = temp.copy()
     g = temp.copy()
     b = temp.copy()
@@ -242,36 +245,31 @@ class cityscapesLoader(data.Dataset):
 
   def encode_segmap(self, mask):
     # Put all void classes to zero
-    for _voidc in self.void_classes:
-      mask[mask == _voidc] = self.ignore_index
-    for _validc in self.valid_classes:
-      mask[mask == _validc] = self.class_map[_validc]
+    for void_class in self.void_classes:
+      mask[mask == void_class] = self.ignore_index
+    for valic_class in self.valid_classes:
+      mask[mask == valic_class] = self.class_map[valic_class]
     return mask
 
 
 if __name__ == "__main__":
-  import matplotlib.pyplot as plt
-
   default_augmentations = Compose(
       [Scale(2048), RandomRotate(10),
        RandomHorizontallyFlip(0.5)])
 
-  local_path = "/datasets01/cityscapes/112817/"
-  dst = cityscapesLoader(local_path,
+  local_path = "/home/yxyang/Downloads/gtFine_trainvaltest"
+  dst = CityscapesLoader(local_path,
                          is_transform=True,
                          augmentations=default_augmentations)
   bs = 4
   trainloader = data.DataLoader(dst, batch_size=bs, num_workers=0)
   for i, data_samples in enumerate(trainloader):
-    imgs, labels = data_samples
-    import pdb
-
-    pdb.set_trace()
-    imgs = imgs.numpy()[:, ::-1, :, :]
-    imgs = np.transpose(imgs, [0, 2, 3, 1])
+    images, labels, name = data_samples
+    images = images.numpy()[:, ::-1, :, :]
+    images = np.transpose(images, [0, 2, 3, 1])
     f, axarr = plt.subplots(bs, 2)
     for j in range(bs):
-      axarr[j][0].imshow(imgs[j])
+      axarr[j][0].imshow(images[j])
       axarr[j][1].imshow(dst.decode_segmap(labels.numpy()[j]))
     plt.show()
     a = input()

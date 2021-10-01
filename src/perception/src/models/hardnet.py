@@ -1,8 +1,9 @@
 """Network definition for FCHarDNet."""
+import collections
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import collections
 
 
 class ConvLayer(nn.Sequential):

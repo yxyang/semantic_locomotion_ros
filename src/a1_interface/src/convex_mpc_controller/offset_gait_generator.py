@@ -1,12 +1,12 @@
 """
 A gait generator that computes leg states based on sinusoids.
 """
-# from absl import logging
-import numpy as np
 from typing import Any, Sequence
 
+import numpy as np
+
 from convex_mpc_controller import gait_generator
-LegState = gait_generator.LegState
+LegState = gait_generator.LegState  # pylint: disable=invalid-name
 
 
 class OffsetGaitGenerator(gait_generator.GaitGenerator):
@@ -23,17 +23,21 @@ class OffsetGaitGenerator(gait_generator.GaitGenerator):
     self._early_touchdown_phase_threshold = early_touchdown_phase_threshold
     self._lose_contact_phase_threshold = lose_contact_phase_threshold
     self.gait_params = [2.5, np.pi, np.pi, 0, 0.5]
+    self.stance_duration = 1 / self.gait_params[0] * (
+        1 - self.gait_params[4]) * np.ones(4)
     self.prev_frame_robot_time = 0
     self.swing_cutoff = 2 * np.pi * 0.5
+    self.prev_frame_robot_time = self.robot.time_since_reset
+    self.last_action_time = self.robot.time_since_reset
 
   def reset(self):
     self.current_phase = np.zeros(4)
-    self.steps_since_reset = 0
     self.prev_frame_robot_time = self.robot.time_since_reset
     self.last_action_time = self.robot.time_since_reset
     self.swing_cutoff = 2 * np.pi * 0.5
 
   def update(self):
+    """Updates generator phase based on robot timing."""
     # Calculate the amount of time passed
     current_robot_time = self.robot.time_since_reset
     frame_duration = self.robot.time_since_reset - self.prev_frame_robot_time
@@ -82,6 +86,7 @@ class OffsetGaitGenerator(gait_generator.GaitGenerator):
 
   @property
   def leg_state(self):
+    """Current leg state based on timing and contact info."""
     leg_state = self.desired_leg_state.copy()
     contact_state = self.robot.foot_contacts
 

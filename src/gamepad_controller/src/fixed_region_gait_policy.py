@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 """Selects gaits based on traversability score."""
+import collections
+
 from absl import app
 from absl import flags
-import collections
+
 import numpy as np
 import rospy
 from std_msgs.msg import Float32

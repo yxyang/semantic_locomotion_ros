@@ -1,7 +1,8 @@
 """Data loaders."""
 import json
 
-from loader.cityscapes_loader import cityscapesLoader
+from loader.cityscapes_loader import CityscapesLoader
+from loader.rugd_loader import RUGDLoader
 
 
 def get_loader(name):
@@ -10,5 +11,6 @@ def get_loader(name):
     :param name:
     """
   return {
-      "cityscapes": cityscapesLoader,
+      "cityscapes": CityscapesLoader,
+      "rugd": RUGDLoader
   }[name]

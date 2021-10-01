@@ -42,6 +42,7 @@ class WarmUpLR(_LRScheduler):
     super(WarmUpLR, self).__init__(optimizer, last_epoch)
 
   def get_lr(self):
+    """Returns current learning rate."""
     cold_lrs = self.scheduler.get_lr()
 
     if self.last_epoch < self.warmup_iters:

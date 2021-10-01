@@ -1,11 +1,12 @@
 """Real A1 robot class."""
-import ml_collections
-import numpy as np
-import robot_interface
-import time
 from typing import Any
 from typing import Optional
 from typing import Tuple
+import time
+
+import ml_collections
+import numpy as np
+import robot_interface
 
 from robots import a1
 from robots import a1_robot_state_estimator
@@ -242,20 +243,20 @@ class A1Robot(a1.A1):
     t1, t2, t3 = motor_angles[0], motor_angles[1], motor_angles[2]
     l_eff = np.sqrt(l_up**2 + l_low**2 + 2 * l_up * l_low * np.cos(t3))
     t_eff = t2 + t3 / 2
-    J = np.zeros((3, 3))
-    J[0, 0] = 0
-    J[0, 1] = -l_eff * np.cos(t_eff)
-    J[0, 2] = l_low * l_up * np.sin(t3) * np.sin(
+    j = np.zeros((3, 3))
+    j[0, 0] = 0
+    j[0, 1] = -l_eff * np.cos(t_eff)
+    j[0, 2] = l_low * l_up * np.sin(t3) * np.sin(
         t_eff) / l_eff - l_eff * np.cos(t_eff) / 2
-    J[1, 0] = -l_hip * np.sin(t1) + l_eff * np.cos(t1) * np.cos(t_eff)
-    J[1, 1] = -l_eff * np.sin(t1) * np.sin(t_eff)
-    J[1, 2] = -l_low * l_up * np.sin(t1) * np.sin(t3) * np.cos(
+    j[1, 0] = -l_hip * np.sin(t1) + l_eff * np.cos(t1) * np.cos(t_eff)
+    j[1, 1] = -l_eff * np.sin(t1) * np.sin(t_eff)
+    j[1, 2] = -l_low * l_up * np.sin(t1) * np.sin(t3) * np.cos(
         t_eff) / l_eff - l_eff * np.sin(t1) * np.sin(t_eff) / 2
-    J[2, 0] = l_hip * np.cos(t1) + l_eff * np.sin(t1) * np.cos(t_eff)
-    J[2, 1] = l_eff * np.sin(t_eff) * np.cos(t1)
-    J[2, 2] = l_low * l_up * np.sin(t3) * np.cos(t1) * np.cos(
+    j[2, 0] = l_hip * np.cos(t1) + l_eff * np.sin(t1) * np.cos(t_eff)
+    j[2, 1] = l_eff * np.sin(t_eff) * np.cos(t1)
+    j[2, 2] = l_low * l_up * np.sin(t3) * np.cos(t1) * np.cos(
         t_eff) / l_eff + l_eff * np.sin(t_eff) * np.cos(t1) / 2
-    return J
+    return j
 
   def get_motor_angles_from_foot_position(self, leg_id, foot_local_position):
     motors_per_leg = self.num_motors // self.num_legs

@@ -1,12 +1,13 @@
 """Interface for reading commands from Logitech F710 Gamepad."""
+import itertools
+import threading
+import time
+
 from absl import flags
 
-import itertools
 import numpy as np
 import rospy
 from third_party import inputs
-import threading
-import time
 
 from a1_interface.msg import controller_mode
 from a1_interface.msg import gait_type
@@ -138,6 +139,7 @@ class Gamepad:
 
   @property
   def speed_command(self):
+    """Computes speed command from user input."""
     delta_time = np.maximum(time.time() - self.last_timestamp, 1)
     max_delta_speed = self._max_acc * delta_time
     self.vx = np.clip(self.vx_raw, self.vx - max_delta_speed,

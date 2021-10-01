@@ -1,16 +1,18 @@
 """A model based controller framework."""
 from datetime import datetime
-import ml_collections
-import numpy as np
 import os
 import pickle
-import pybullet
-from pybullet_utils import bullet_client
-import rospkg
-import rospy
 import threading
 import time
 from typing import Tuple
+
+import ml_collections
+import numpy as np
+import rospkg
+import rospy
+from pybullet_utils import bullet_client
+import pybullet
+
 
 from a1_interface.msg import gait_type
 from a1_interface.msg import controller_mode
@@ -23,8 +25,7 @@ from robots import a1
 from robots import a1_robot
 from robots.motors import MotorCommand
 from robots.motors import MotorControlMode
-from worlds import abstract_world
-from worlds import stair_world
+from worlds import abstract_world, uneven_world
 
 
 def get_sim_conf():
@@ -39,7 +40,7 @@ def get_sim_conf():
   return config
 
 
-class LocomotionController(object):
+class LocomotionController:
   """Generates the quadruped locomotion.
 
   The actual effect of this controller depends on the composition of each
@@ -51,7 +52,7 @@ class LocomotionController(object):
       use_real_robot: bool = False,
       show_gui: bool = False,
       logdir: str = 'logs/',
-      world_class: abstract_world.AbstractWorld = stair_world.StairWorld):
+      world_class: abstract_world.AbstractWorld = uneven_world.UnevenWorld):
     """Initializes the class.
 
     Args:
@@ -91,6 +92,7 @@ class LocomotionController(object):
     self.run_thread.start()
 
   def _setup_robot_and_controllers(self):
+    """Sets up simulated / real robot and corresponding MPC controllers."""
     # Construct robot
     if self._show_gui and not self._use_real_robot:
       p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -237,6 +239,7 @@ class LocomotionController(object):
         desired_extra_torque=0)
 
   def _handle_mode_switch(self):
+    """Handles robot mode switch based on user command."""
     if self._mode == self._desired_mode:
       return
     self._mode = self._desired_mode
@@ -255,6 +258,7 @@ class LocomotionController(object):
     self._logs = []
 
   def _update_logging(self, action, qp_sol):
+    """Adds latest robot state to logs."""
     frame = dict(
         desired_speed=(self._swing_controller.desired_speed,
                        self._swing_controller.desired_twisting_speed),
@@ -288,6 +292,7 @@ class LocomotionController(object):
           os.path.join(self._logdir, filename)))
 
   def _handle_gait_switch(self):
+    """Handles gait switch commands and update corresponding controllers."""
     if self._gait == self._desired_gait:
       return
     if self._desired_gait == gait_type.CRAWL:
@@ -310,6 +315,7 @@ class LocomotionController(object):
         self._gait_config.mpc_body_inertia, self._gait_config.mpc_weight)
 
   def run(self):
+    """The low-level control thread."""
     rospy.loginfo("Low level thread started...")
     while True:
       self._handle_mode_switch()
@@ -329,7 +335,6 @@ class LocomotionController(object):
         rospy.loginfo("Running loop terminated, exiting...")
         break
 
-      # Camera setup:
       if self._show_gui:
         self.pybullet_client.resetDebugVisualizerCamera(
             cameraDistance=1.0,
@@ -347,6 +352,7 @@ class LocomotionController(object):
 
   @property
   def is_safe(self):
+    """Computes whether the robot is safe based on height and orientation."""
     if self.mode != controller_mode.WALK:
       return True
     rot_mat = np.array(
@@ -370,6 +376,7 @@ class LocomotionController(object):
     return self._gait
 
   def set_desired_speed(self, speed_command):
+    """Sets the robot's desired speed."""
     desired_lin_speed = (
         self._gait_config.max_forward_speed * speed_command.vel_x,
         self._gait_config.max_side_speed * speed_command.vel_y,

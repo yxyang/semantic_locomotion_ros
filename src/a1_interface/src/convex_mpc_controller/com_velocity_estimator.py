@@ -1,7 +1,8 @@
 """State estimator."""
+from typing import Any, Sequence
+
 import numpy as np
 import pybullet as p
-from typing import Any, Sequence
 
 from robots import a1_robot
 from convex_mpc_controller.gait_generator import LegState
@@ -10,7 +11,7 @@ from utilities.moving_window_filter import MovingWindowFilter
 _DEFAULT_WINDOW_SIZE = 20
 
 
-class COMVelocityEstimator(object):
+class COMVelocityEstimator:
   """Estimate the CoM velocity using on board sensors.
 
 
@@ -30,6 +31,8 @@ class COMVelocityEstimator(object):
     self._last_desired_leg_state = [LegState.STANCE] * 4
     self._swing_force_history = [[], [], [], []]
     self._ground_normal = np.array([0., 0., 1.])
+    self._com_velocity_world_frame = np.zeros(3)
+    self._com_velocity_body_frame = np.zeros(3)
     self.reset(0)
 
   def reset(self, current_time):
@@ -56,6 +59,7 @@ class COMVelocityEstimator(object):
     return normal_vec
 
   def update(self, desired_leg_state):
+    """Updates estimator at each control step."""
     # Update foot force calibration
     if isinstance(self._robot, a1_robot.A1Robot):
       for leg_id in range(4):
@@ -94,6 +98,7 @@ class COMVelocityEstimator(object):
 
   @property
   def com_position_ground_frame(self):
+    """Base position in ground frame. Currently only height is estimated."""
     foot_contacts = self._robot.foot_contacts.copy()
     if np.sum(foot_contacts) == 0:
       return np.array((0, 0, self._robot.mpc_body_height))

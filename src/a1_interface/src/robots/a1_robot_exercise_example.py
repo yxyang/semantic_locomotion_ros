@@ -3,15 +3,16 @@
 To run:
 python -m semantic_locomotion.robots.a1_robot_exercise_example.py
 """
+import time
+from typing import Tuple
+
 from absl import app
 from absl import flags
 
 import ml_collections
 import numpy as np
-import pybullet
 from pybullet_utils import bullet_client
-import time
-from typing import Tuple
+import pybullet
 
 from robots import a1
 from robots import a1_robot

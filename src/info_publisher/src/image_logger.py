@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 """Example of convex MPCcontroller on A1 robot."""
+from datetime import datetime
+import os
+
 from absl import app
 from absl import flags
 
 import cv2
 from cv_bridge import CvBridge
-from datetime import datetime
-import os
 import rospy
 from sensor_msgs.msg import Image
 
@@ -25,6 +26,7 @@ class ImageLogger:
     self._camera_image = image
 
   def record_segmentation(self, segmentation):
+    """Records segmentation and original image side by sdie."""
     if self._camera_image is None:
       return
     filename_postfix = datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')

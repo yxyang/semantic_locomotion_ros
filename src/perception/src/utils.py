@@ -1,12 +1,12 @@
 """
 Misc Utility functions
 """
-import os
-import logging
 import datetime
-import numpy as np
-
+import logging
+import os
 from collections import OrderedDict
+
+import numpy as np
 
 
 def recursive_glob(rootdir=".", suffix=""):
@@ -45,6 +45,7 @@ def convert_state_dict(state_dict):
 
 
 def get_logger(logdir):
+  """Returns logger."""
   logger = logging.getLogger("ptsemseg")
   ts = str(datetime.datetime.now()).split(".")[0].replace(" ", "_")
   ts = ts.replace(":", "_").replace("-", "_")

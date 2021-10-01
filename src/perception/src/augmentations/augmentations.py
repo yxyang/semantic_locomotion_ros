@@ -2,35 +2,35 @@
 import math
 import numbers
 import random
+
 import numpy as np
 import torchvision.transforms.functional as tf
-
 from PIL import Image, ImageOps
 
 
-class Compose(object):
+class Compose:
   """Composes a list of augmentations."""
   def __init__(self, augmentations):
     self.augmentations = augmentations
-    self.PIL2Numpy = False
+    self.pil_to_numpy = False
 
   def __call__(self, img, mask):
     if isinstance(img, np.ndarray):
       img = Image.fromarray(img, mode="RGB")
       mask = Image.fromarray(mask, mode="L")
-      self.PIL2Numpy = True
+      self.pil_to_numpy = True
 
     assert img.size == mask.size
     for a in self.augmentations:
       img, mask = a(img, mask)
 
-    if self.PIL2Numpy:
+    if self.pil_to_numpy:
       img, mask = np.array(img), np.array(mask, dtype=np.uint8)
 
     return img, mask
 
 
-class RandomCrop(object):
+class RandomCrop:
   """Randomly crops the input image."""
   def __init__(self, size, padding=0):
     if isinstance(size, numbers.Number):
@@ -66,7 +66,7 @@ class RandomCrop(object):
         (x1, y1, x1 + cw, y1 + ch)), mask.crop((x1, y1, x1 + cw, y1 + ch)))
 
 
-class AdjustGamma(object):
+class AdjustGamma:
   """Adjusts the gamma value of image."""
   def __init__(self, gamma):
     self.gamma = gamma
@@ -76,7 +76,7 @@ class AdjustGamma(object):
     return tf.adjust_gamma(img, random.uniform(1, 1 + self.gamma)), mask
 
 
-class AdjustSaturation(object):
+class AdjustSaturation:
   """Adjusts the saturation of image."""
   def __init__(self, saturation):
     self.saturation = saturation
@@ -90,7 +90,7 @@ class AdjustSaturation(object):
     )
 
 
-class AdjustHue(object):
+class AdjustHue:
   """Adjusts the hue of image."""
   def __init__(self, hue):
     self.hue = hue
@@ -100,7 +100,7 @@ class AdjustHue(object):
     return tf.adjust_hue(img, random.uniform(-self.hue, self.hue)), mask
 
 
-class AdjustBrightness(object):
+class AdjustBrightness:
   """Adjusts the brightness of image."""
   def __init__(self, bf):
     self.bf = bf
@@ -111,7 +111,7 @@ class AdjustBrightness(object):
                                                     1 + self.bf)), mask
 
 
-class AdjustContrast(object):
+class AdjustContrast:
   """Adjusts the contrast of image."""
   def __init__(self, cf):
     self.cf = cf
@@ -122,7 +122,7 @@ class AdjustContrast(object):
                                                   1 + self.cf)), mask
 
 
-class CenterCrop(object):
+class CenterCrop:
   """Crops the image in the center."""
   def __init__(self, size):
     if isinstance(size, numbers.Number):
@@ -140,7 +140,7 @@ class CenterCrop(object):
         (x1, y1, x1 + tw, y1 + th)), mask.crop((x1, y1, x1 + tw, y1 + th)))
 
 
-class RandomHorizontallyFlip(object):
+class RandomHorizontallyFlip:
   """Flips the image horizontally with probability p."""
   def __init__(self, p):
     self.p = p
@@ -152,7 +152,7 @@ class RandomHorizontallyFlip(object):
     return img, mask
 
 
-class RandomVerticallyFlip(object):
+class RandomVerticallyFlip:
   """Flips the image vertically with probability p."""
   def __init__(self, p):
     self.p = p
@@ -164,7 +164,7 @@ class RandomVerticallyFlip(object):
     return img, mask
 
 
-class FreeScale(object):
+class FreeScale:
   """Resizes the image."""
   def __init__(self, size):
     self.size = tuple(reversed(size))  # size: (h, w)
@@ -175,7 +175,7 @@ class FreeScale(object):
                        Image.BILINEAR), mask.resize(self.size, Image.NEAREST))
 
 
-class RandomScaleCrop(object):
+class RandomScaleCrop:
   """Randomly scale-crop the image."""
   def __init__(self, size):
     self.size = size
@@ -190,7 +190,7 @@ class RandomScaleCrop(object):
                      mask.resize(new_size, Image.NEAREST))
 
 
-class RandomTranslate(object):
+class RandomTranslate:
   """Randomly translate / crop the image."""
   def __init__(self, offset):
     # tuple (delta_x, delta_y)
@@ -236,7 +236,7 @@ class RandomTranslate(object):
     )
 
 
-class RandomRotate(object):
+class RandomRotate:
   """Randomly rotate the image."""
   def __init__(self, degree):
     self.degree = degree
@@ -265,7 +265,7 @@ class RandomRotate(object):
     )
 
 
-class Scale(object):
+class Scale:
   """Scale the image."""
   def __init__(self, size):
     self.size = size
@@ -287,7 +287,7 @@ class Scale(object):
                          Image.BILINEAR), mask.resize((ow, oh), Image.NEAREST))
 
 
-class RandomSizedCrop(object):
+class RandomSizedCrop:
   """Randomly size-crop the image."""
   def __init__(self, size):
     self.size = size
@@ -324,7 +324,7 @@ class RandomSizedCrop(object):
     return crop(*scale(img, mask))
 
 
-class RandomSized(object):
+class RandomSized:
   """Randomly resize the iamge."""
   def __init__(self, size):
     self.size = size

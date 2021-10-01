@@ -4,6 +4,7 @@ import numpy as np
 
 
 def get_config():
+  """Configurations for crawling gait."""
   config = ml_collections.ConfigDict()
   config.max_forward_speed = 0.5
   config.max_side_speed = 0.4
@@ -12,7 +13,7 @@ def get_config():
   config.gait_parameters = [1., np.pi, np.pi * 0.5, np.pi * 1.5, 0.26]
 
   # MPC-related settings
-  config.mpc_foot_friction = 0.99
+  config.mpc_foot_friction = .99#0.55
   config.mpc_body_mass = 110 / 9.8
   config.mpc_body_inertia = np.array(
       (0.027, 0, 0, 0, 0.057, 0, 0, 0, 0.064)) * 5.

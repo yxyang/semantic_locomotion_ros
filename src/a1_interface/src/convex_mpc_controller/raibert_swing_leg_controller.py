@@ -1,9 +1,9 @@
 """The swing leg controller class."""
 # from absl import logging
+from typing import Any, Mapping, Sequence, Tuple
 
 import copy
 import numpy as np
-from typing import Any, Mapping, Sequence, Tuple
 
 from robots.motors import MotorCommand
 from convex_mpc_controller import gait_generator as gait_generator_lib
@@ -24,6 +24,7 @@ def cubic_bezier(x0: np.ndarray, x1: np.ndarray,
 def _gen_swing_foot_trajectory(input_phase: float, start_pos: np.ndarray,
                                end_pos: np.ndarray,
                                foot_height: float) -> Sequence[float]:
+  """Computes swing foot trajectory based on phase and key points."""
   mid_z = max(end_pos[2], start_pos[2]) + foot_height
   mid_pos = (start_pos + end_pos) / 2
   mid_pos[2] = mid_z
@@ -124,6 +125,7 @@ class RaibertSwingLegController:
         (0., 0., self._desired_height - landing_clearance))
 
   def get_action(self) -> Mapping[Any, Any]:
+    """Computes action for swing legs."""
     com_velocity = self._state_estimator.com_velocity_body_frame
     com_velocity = np.array((com_velocity[0], com_velocity[1], 0))
 

@@ -5,7 +5,7 @@ import collections
 import numpy as np
 
 
-class MovingWindowFilter(object):
+class MovingWindowFilter:
   """A stable O(1) moving filter for incoming data streams.
 
   We implement the Neumaier's algorithm to calculate the moving window average,
