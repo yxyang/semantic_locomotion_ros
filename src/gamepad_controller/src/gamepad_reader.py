@@ -51,7 +51,7 @@ def main(_):
 
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
-    if not robot_state_listener.is_safe:
+    if not robot_state_listener.is_safe and not gamepad.estop_flagged:
       rospy.loginfo('Estop automatically flagged.')
       gamepad.flag_estop()
     controller_mode_publisher.publish(gamepad.mode_command)

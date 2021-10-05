@@ -24,9 +24,9 @@ class RUGDLoader(data.Dataset):
       root,
       split="train",
       is_transform=False,
-      img_size=(1024, 2048),
+      image_size=(1024, 2048),
       augmentations=None,
-      img_norm=False,
+      image_norm=False,
       version="cityscapes",
       test_mode=False,
   ):
@@ -35,17 +35,17 @@ class RUGDLoader(data.Dataset):
         :param root:
         :param split:
         :param is_transform:
-        :param img_size:
+        :param image_size:
         :param augmentations
         """
     self.root = root
     self.split = split
     self.is_transform = is_transform
     self.augmentations = augmentations
-    self.img_norm = img_norm
+    self.image_norm = image_norm
     self.n_classes = 25
-    self.img_size = img_size if isinstance(img_size, tuple) else (img_size,
-                                                                  img_size)
+    self.image_size = image_size if isinstance(
+        image_size, tuple) else (image_size, image_size)
     self.mean = np.array(self.mean_rgb[version])
     self.files = {}
 
@@ -84,35 +84,38 @@ class RUGDLoader(data.Dataset):
 
         :param index:
         """
-    img_path = self.files[self.split][index].rstrip()
-    lbl_path = img_path.replace('frames', 'annotations_2d')
-    name = img_path.split(os.sep)[-1][:-4] + ".png"
+    image_path = self.files[self.split][index].rstrip()
+    lbl_path = image_path.replace('frames', 'annotations_2d')
+    name = image_path.split(os.sep)[-1][:-4] + ".png"
 
-    img = Image.open(img_path)
-    img = np.array(img, dtype=np.uint8)
+    image = Image.open(image_path)
+    image = np.array(image, dtype=np.uint8)
 
-    lbl = Image.open(lbl_path)
-    lbl = np.array(lbl, dtype=np.uint8)
-    lbl = self.encode_segmap(np.array(lbl, dtype=np.uint8))
+    if os.path.exists(lbl_path):
+      lbl = Image.open(lbl_path)
+      lbl = np.array(lbl, dtype=np.uint8)
+      lbl = self.encode_segmap(np.array(lbl, dtype=np.uint8))
+    else:
+      lbl = np.zeros((image.shape[:2])) #pylint: disable=unsubscriptable-object
     if self.augmentations is not None:
-      img, lbl = self.augmentations(img, lbl)
+      image, lbl = self.augmentations(image, lbl)
 
     if self.is_transform:
-      img, lbl = self.transform(img, lbl)
+      image, lbl = self.transform(image, lbl)
 
-    return img, lbl, name
+    return image, lbl, name
 
-  def transform(self, img, lbl):
+  def transform(self, image, lbl):
     """transform
 
-        :param img:
+        :param image:
         :param lbl:
     """
-    img = np.array(
-        Image.fromarray(img).resize(
-            (self.img_size[1], self.img_size[0])))  # uint8 with RGB mode
-    img = img[:, :, ::-1]  # RGB -> BGR
-    img = img.astype(np.float64)
+    image = np.array(
+        Image.fromarray(image).resize(
+            (self.image_size[1], self.image_size[0])))  # uint8 with RGB mode
+    image = image[:, :, ::-1]  # RGB -> BGR
+    image = image.astype(np.float64)
 
     value_scale = 255
     mean = [0.406, 0.456, 0.485]
@@ -120,16 +123,16 @@ class RUGDLoader(data.Dataset):
     std = [0.225, 0.224, 0.229]
     std = [item * value_scale for item in std]
 
-    if self.img_norm:
-      img = (img - mean) / std
+    if self.image_norm:
+      image = (image - mean) / std
 
     # NHWC -> NCHW
-    img = img.transpose(2, 0, 1)
+    image = image.transpose(2, 0, 1)
 
     classes = np.unique(lbl)
     lbl = lbl.astype(float)
     lbl = np.array(
-        Image.fromarray(lbl).resize((self.img_size[1], self.img_size[0]),
+        Image.fromarray(lbl).resize((self.image_size[1], self.image_size[0]),
                                     resample=Image.NEAREST))
     lbl = lbl.astype(int)
 
@@ -140,10 +143,10 @@ class RUGDLoader(data.Dataset):
       print(np.unique(lbl[lbl != self.ignore_index]))
       raise ValueError("Segmentation map contained invalid class values")
 
-    img = torch.from_numpy(img).float()
+    image = torch.from_numpy(image).float()
     lbl = torch.from_numpy(lbl).long()
 
-    return img, lbl
+    return image, lbl
 
   def decode_segmap(self, segmap):
     """Decodes segmentation map (hxw) to rgb image (hxwx3)"""
@@ -187,14 +190,14 @@ if __name__ == "__main__":
   bs = 4
   trainloader = data.DataLoader(dst, batch_size=bs, num_workers=0)
   for i, data_samples in enumerate(trainloader):
-    imgs, labels, _ = data_samples
-    imgs = imgs.numpy()[:, ::-1, :, :]
-    imgs = np.transpose(imgs, [0, 2, 3, 1])
-    imgs = imgs.astype(np.int)
+    images, labels, _ = data_samples
+    images = images.numpy()[:, ::-1, :, :]
+    images = np.transpose(images, [0, 2, 3, 1])
+    images = images.astype(np.int)
     labels_decoded = dst.decode_segmap(labels.numpy())
     f, axarr = plt.subplots(bs, 2)
     for j in range(bs):
-      axarr[j][0].imshow(imgs[j])
+      axarr[j][0].imshow(images[j])
       axarr[j][1].imshow(labels_decoded[j])
     plt.show()
     a = input()

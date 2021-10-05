@@ -73,14 +73,13 @@ class Gamepad:
     self.read_thread.start()
     print("To confirm that you are using the correct gamepad, press down the "
           "LEFT joystick to continue...")
-    start_time = time.time()
-    while time.time() - start_time < 5:
-      if self._lj_pressed:
-        return
-      time.sleep(0.01)
-    self.stop()
-    raise RuntimeError("Gamepad response not detected after 5 seconds, "
-                       "terminating...")
+    while True:
+      self.gamepad.set_vibration(1., 1., 200)
+      start_time = time.time()
+      while time.time() - start_time < 1:
+        if self._lj_pressed:
+          return
+        time.sleep(0.01)
 
   def read_loop(self):
     """The read loop for events.

@@ -10,9 +10,10 @@ from absl import flags
 from ml_collections import config_flags
 from PIL import Image
 from torch.utils import data
+from tqdm import tqdm
 
 from loader import get_loader
-from metrics import runningScore
+from metrics import RunningScore
 from models import get_model
 from utils import convert_state_dict
 
@@ -49,13 +50,12 @@ def main(_):
       data_path,
       split=config["data"]["val_split"],
       is_transform=True,
-      img_size=(1024, 2048),
   )
 
   n_classes = loader.n_classes
 
   valloader = data.DataLoader(loader, batch_size=1, num_workers=1)
-  running_metrics = runningScore(n_classes)
+  running_metrics = RunningScore(n_classes)
 
   # Setup Model
 
@@ -78,7 +78,7 @@ def main(_):
   #stat(model, (3, 1024, 2048))
   torch.backends.cudnn.benchmark = True
 
-  for i, (images, labels, fname) in enumerate(valloader):
+  for i, (images, labels, fname) in tqdm(enumerate(valloader)):
     start_time = timeit.default_timer()
 
     images = images.to(device)
@@ -123,14 +123,15 @@ def main(_):
           decoded = loader.decode_segmap(pred) * 255.
           img_input = np.squeeze(images.cpu().numpy(), axis=0)
           img_input = img_input.transpose(1, 2, 0)
-          blend = img_input * 0.2 + decoded * 0.8
+          blend = np.concatenate((img_input, decoded), axis=1)
           fname_new = fname[0]
           fname_new = fname_new[:-4]
           fname_new += '.jpg'
           output_dir = "./out_rgb/"
-          if not os.path.exists(output_dir):
-            os.mkdir(output_dir)
-          Image.fromarray(blend.astype(np.uint8)).save(output_dir + fname_new)
+          output_path = os.path.join(output_dir, fname_new)
+          if not os.path.exists(os.path.dirname(output_path)):
+            os.makedirs(os.path.dirname(output_path))
+          Image.fromarray(blend.astype(np.uint8)).save(output_path)
 
       pred = outputs.data.max(1)[1].cpu().numpy()
 
