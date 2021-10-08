@@ -13,7 +13,7 @@ from a1_interface.msg import robot_state
 from a1_interface.msg import speed_command
 
 CONTROLLER_MODE_MAP = {0: "Down", 1: "Stand", 2: "Walk", 3: "Terminate"}
-GAIT_TYPE_MAP = {0: "Crawl", 1: "Trot", 2: "Flytrot"}
+GAIT_TYPE_MAP = {0: "Crawl", 1: "Slowtrot", 2: "Fasttrot"}
 
 
 class RobotStateRecorder:
