@@ -12,6 +12,11 @@ import rospy
 from sensor_msgs.msg import Image
 
 flags.DEFINE_string('logdir', 'logs', 'logdir.')
+flags.DEFINE_integer('max_num_images', 10000,
+                     'Maximum number of images to record.')
+flags.DEFINE_integer(
+    'num_images_to_delete', 1000,
+    'Number of images to delete when the buffer becomes full.')
 
 FLAGS = flags.FLAGS
 
@@ -44,6 +49,16 @@ class ImageLogger:
     cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
     cv2.imwrite(full_dir, cv_image)
 
+
+def delete_old_files(logdir):
+  files_list = list(os.listdir(logdir))
+  if len(files_list) > FLAGS.max_num_images:
+    rospy.loginfo("Image buffer limit reached, deleting...")
+    files_list = sorted(files_list)
+    for filename in files_list[:FLAGS.num_images_to_delete]:
+      os.remove(os.path.join(logdir, filename))
+
+
 def main(argv):
   del argv  # unused
 
@@ -56,7 +71,11 @@ def main(argv):
   rospy.Subscriber("/perception/segmentation_map", Image,
                    image_logger.record_segmentation)
   rospy.init_node("image_logger", anonymous=True)
-  rospy.spin()
+
+  rate = rospy.Rate(0.1)
+  while not rospy.is_shutdown():
+    delete_old_files(FLAGS.logdir)
+    rate.sleep()
 
 
 if __name__ == "__main__":
