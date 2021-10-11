@@ -13,7 +13,6 @@ import rospy
 from pybullet_utils import bullet_client
 import pybullet
 
-
 from a1_interface.msg import gait_type
 from a1_interface.msg import controller_mode
 from convex_mpc_controller import com_velocity_estimator
@@ -263,6 +262,10 @@ class LocomotionController:
         desired_speed=(self._swing_controller.desired_speed,
                        self._swing_controller.desired_twisting_speed),
         timestamp=self._time_since_reset,
+        base_position_ground_frame=self._state_estimator.
+        com_position_ground_frame,
+        base_quat_ground_frame=self._state_estimator.
+        com_orientation_quat_ground_frame,
         base_rpy=self._robot.base_orientation_rpy,
         motor_angles=self._robot.motor_angles,
         base_vel=self._robot.motor_velocities,
