@@ -48,6 +48,12 @@ def main(argv):
       controller.set_controller_mode(
           controller_mode(mode=controller_mode.DOWN,
                           timestamp=rospy.get_rostime()))
+
+    if not controller.is_safe:
+      rospy.loginfo("Robot unsafe, stopping robot.")
+      controller.set_controller_mode(
+          controller_mode(mode=controller_mode.DOWN,
+                          timestamp=rospy.get_rostime()))
     rate.sleep()
 
   controller.set_controller_mode(
