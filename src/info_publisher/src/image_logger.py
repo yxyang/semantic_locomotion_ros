@@ -36,14 +36,14 @@ class ImageLogger:
       return
     filename_postfix = datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')
     full_dir = os.path.join(
-        FLAGS.logdir, '{}_{}.png'.format('segmentation', filename_postfix))
+        FLAGS.logdir, 'log_{}_{}.png'.format(filename_postfix, 'segmentation'))
     cv_image = self._bridge.imgmsg_to_cv2(segmentation,
                                           desired_encoding='passthrough')
     cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
     cv2.imwrite(full_dir, cv_image)
 
     full_dir = os.path.join(FLAGS.logdir,
-                            '{}_{}.png'.format('camera', filename_postfix))
+                            'log_{}_{}.png'.format(filename_postfix, 'camera'))
     cv_image = self._bridge.imgmsg_to_cv2(self._camera_image,
                                           desired_encoding='passthrough')
     cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
