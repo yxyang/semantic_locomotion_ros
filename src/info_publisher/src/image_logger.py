@@ -8,8 +8,9 @@ from absl import flags
 
 import cv2
 from cv_bridge import CvBridge
+import numpy as np
 import rospy
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 
 flags.DEFINE_string('logdir', 'logs', 'logdir.')
 flags.DEFINE_integer('max_num_images', 10000,
@@ -37,15 +38,17 @@ class ImageLogger:
     filename_postfix = datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')
     full_dir = os.path.join(
         FLAGS.logdir, '{}_{}.png'.format('segmentation', filename_postfix))
-    cv_image = self._bridge.imgmsg_to_cv2(segmentation,
-                                          desired_encoding='passthrough')
+
+
+    np_arr = np.fromstring(segmentation.data, np.uint8)
+    cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
     cv2.imwrite(full_dir, cv_image)
 
     full_dir = os.path.join(FLAGS.logdir,
                             '{}_{}.png'.format('camera', filename_postfix))
-    cv_image = self._bridge.imgmsg_to_cv2(self._camera_image,
-                                          desired_encoding='passthrough')
+    np_arr = np.fromstring(self._camera_image.data, np.uint8)
+    cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
     cv2.imwrite(full_dir, cv_image)
 
@@ -66,10 +69,10 @@ def main(argv):
     os.makedirs(FLAGS.logdir)
 
   image_logger = ImageLogger()
-  rospy.Subscriber("/perception/camera_image", Image,
-                   image_logger.record_camera_image)
-  rospy.Subscriber("/perception/segmentation_map", Image,
-                   image_logger.record_segmentation)
+  rospy.Subscriber("/perception/camera_image_repub/compressed",
+                   CompressedImage, image_logger.record_camera_image)
+  rospy.Subscriber("/perception/segmentation_map_repub/compressed",
+                   CompressedImage, image_logger.record_segmentation)
   rospy.init_node("image_logger", anonymous=True)
 
   rate = rospy.Rate(0.1)
