@@ -37,8 +37,7 @@ class ImageLogger:
       return
     filename_postfix = datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')
     full_dir = os.path.join(
-        FLAGS.logdir, '{}_{}.png'.format('segmentation', filename_postfix))
-
+        FLAGS.logdir, 'log_{}_{}.png'.format(filename_postfix, 'segmentation'))
 
     np_arr = np.fromstring(segmentation.data, np.uint8)
     cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
@@ -46,7 +45,7 @@ class ImageLogger:
     cv2.imwrite(full_dir, cv_image)
 
     full_dir = os.path.join(FLAGS.logdir,
-                            '{}_{}.png'.format('camera', filename_postfix))
+                            'log_{}_{}.png'.format(filename_postfix, 'camera'))
     np_arr = np.fromstring(self._camera_image.data, np.uint8)
     cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
