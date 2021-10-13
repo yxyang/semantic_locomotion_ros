@@ -3,10 +3,9 @@
 import cv2
 import numpy as np
 import pyrealsense2 as rs
-import ros_numpy
 import rospy
 from absl import app, flags
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 
 flags.DEFINE_integer('frame_width', 640, 'frame width.')
 flags.DEFINE_integer('frame_height', 360, 'frame height.')
@@ -21,9 +20,8 @@ def main(_):
                        FLAGS.frame_rate)
   pipeline.start(config)
 
-  camera_image_publisher = rospy.Publisher('/perception/camera_image',
-                                           Image,
-                                           queue_size=1)
+  camera_image_publisher = rospy.Publisher(
+      '/perception/camera_image/compressed', CompressedImage, queue_size=1)
   rospy.init_node('realsense_camera_capture', anonymous=True)
   rate = rospy.Rate(FLAGS.frame_rate)
   while not rospy.is_shutdown():
@@ -32,10 +30,12 @@ def main(_):
     color_image = np.array(color_frame.get_data())
     color_image = cv2.resize(color_image,
                              dsize=(FLAGS.frame_width, FLAGS.frame_height))
-    image = ros_numpy.msgify(Image,
-                             cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB),
-                             encoding='rgb8')
-    camera_image_publisher.publish(image)
+    # color_image = cv2.cvtColor(color_image, cv2.COLOR_RGB2BGR)
+    msg = CompressedImage()
+    msg.header.stamp = rospy.Time.now()
+    msg.format = "png"
+    msg.data = np.array(cv2.imencode(".png", color_image)[1]).tostring()
+    camera_image_publisher.publish(msg)
     rate.sleep()
   pipeline.stop()
 

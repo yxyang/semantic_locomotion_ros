@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import rospy
 from absl import app
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float32
 
 from fixed_region_mapper_lib import FixedRegionMapper
@@ -22,15 +22,15 @@ def image_callback(image):
 def main(argv):
   del argv  # unused
   mapper = FixedRegionMapper()
-  rospy.Subscriber("/perception/camera_image", Image, mapper.set_camera_image)
+  rospy.Subscriber("/perception/camera_image/compressed", CompressedImage,
+                   mapper.set_camera_image)
 
-  segmentation_map_publisher = rospy.Publisher('/perception/segmentation_map',
-                                               Image,
-                                               queue_size=1)
+  segmentation_map_publisher = rospy.Publisher(
+      '/perception/segmentation_map/compressed', CompressedImage, queue_size=1)
   traversability_score_publisher = rospy.Publisher(
       '/perception/traversability_score', Float32, queue_size=1)
   rospy.init_node("segmentation", anonymous=True)
-  rate = rospy.Rate(10)
+  rate = rospy.Rate(6)
   while not rospy.is_shutdown():
     if mapper.image_array is not None:
       score, segmentation_map = mapper.get_segmentation_result()

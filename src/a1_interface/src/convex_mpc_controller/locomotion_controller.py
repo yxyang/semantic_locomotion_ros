@@ -347,7 +347,10 @@ class LocomotionController:
         )
 
   def set_controller_mode(self, command):
-    self._desired_mode = command.mode
+    if not self.is_safe:
+      self._desired_mode = controller_mode.DOWN
+    else:
+      self._desired_mode = command.mode
     self._last_command_timestamp = self._time_since_reset
 
   def set_gait(self, command):

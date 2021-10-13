@@ -41,14 +41,14 @@ class ImageLogger:
 
     np_arr = np.fromstring(segmentation.data, np.uint8)
     cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
+    # cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
     cv2.imwrite(full_dir, cv_image)
 
     full_dir = os.path.join(FLAGS.logdir,
                             'log_{}_{}.png'.format(filename_postfix, 'camera'))
     np_arr = np.fromstring(self._camera_image.data, np.uint8)
     cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
+    # cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
     cv2.imwrite(full_dir, cv_image)
 
 
@@ -68,9 +68,9 @@ def main(argv):
     os.makedirs(FLAGS.logdir)
 
   image_logger = ImageLogger()
-  rospy.Subscriber("/perception/camera_image_repub/compressed",
+  rospy.Subscriber("/perception/camera_image/compressed",
                    CompressedImage, image_logger.record_camera_image)
-  rospy.Subscriber("/perception/segmentation_map_repub/compressed",
+  rospy.Subscriber("/perception/segmentation_map/compressed",
                    CompressedImage, image_logger.record_segmentation)
   rospy.init_node("image_logger", anonymous=True)
 

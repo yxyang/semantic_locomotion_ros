@@ -4,11 +4,11 @@ from typing import Tuple
 
 import cv2
 import numpy as np
-import ros_numpy
 import rospkg
+import rospy
 import torch
 import yaml
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 
 from models import get_model
 from utils import convert_state_dict
@@ -90,14 +90,19 @@ class FixedRegionMapper:
     return seg_map
 
   def get_segmentation_result(self) -> Tuple[np.ndarray, float]:
+    """Returns segmentation result (score and visualization)."""
     segmentation_map = self._compute_segmentation_map()
     mask, _ = self._get_segmentation_mask()
     rgb_segmentation_map = _convert_segmentation_map(segmentation_map)
     traversability_score = np.sum(mask * segmentation_map) / np.sum(mask)
     visualization = (np.array(rgb_segmentation_map) * 255).astype(np.uint8)
-    return traversability_score, ros_numpy.msgify(Image,
-                                                  visualization,
-                                                  encoding="rgb8")
+    visualization = cv2.cvtColor(visualization, cv2.COLOR_RGB2BGR)
+
+    msg = CompressedImage()
+    msg.header.stamp = rospy.Time.now()
+    msg.format = "png"
+    msg.data = np.array(cv2.imencode(".png", visualization)[1]).tostring()
+    return traversability_score, msg
 
   @property
   def camera_image(self):
@@ -109,7 +114,8 @@ class FixedRegionMapper:
 
   def set_camera_image(self, image):
     self._camera_image = image
-    self._image_height = image.height
-    self._image_width = image.width
-    self._image_array = np.frombuffer(image.data, dtype=np.uint8).reshape(
-        image.height, image.width, -1).astype(np.float32) / 255.
+    buffer = np.fromstring(image.data, np.uint8)
+    self._image_array = np.array(cv2.imdecode(buffer, cv2.IMREAD_COLOR),
+                                 dtype=np.float32) / 255.
+    self._image_height = self._image_array.shape[0]  # pylint: disable=E1136
+    self._image_width = self._image_array.shape[1]  # pylint: disable=E1136
