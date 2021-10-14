@@ -1,4 +1,4 @@
 <launch>
   <node pkg="gamepad_controller" type="gamepad_reader.py" name="gamepad_controller" respawn="true"/>
-  <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=False --use_real_robot=True --logdir=logs" respawn="true"/>
+  <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=False --use_real_robot=True" respawn="true"/>
 </launch>

@@ -285,6 +285,9 @@ class LocomotionController:
       frame['foot_contact_force'] = self._robot.foot_forces
     if self._logdir:
       self._logs.append(frame)
+      print("Log size: {}".format(len(self._logs)))
+      if len(self._logs) > 10000:
+        self._flush_logging()
 
   def _flush_logging(self):
     if self._logdir:
@@ -293,6 +296,7 @@ class LocomotionController:
       pickle.dump(self._logs, open(os.path.join(self._logdir, filename), 'wb'))
       rospy.loginfo("Data logged to: {}".format(
           os.path.join(self._logdir, filename)))
+    self._logs = []
 
   def _handle_gait_switch(self):
     """Handles gait switch commands and update corresponding controllers."""
@@ -367,7 +371,7 @@ class LocomotionController:
                 (3, 3))
     up_vec = rot_mat[2, 2]
     base_height = self._robot.base_position[2]
-    return up_vec > 0.85 and base_height > 0.18
+    return up_vec > 0.85 and base_height > 0.14
 
   @property
   def mode(self):
