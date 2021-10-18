@@ -9,7 +9,7 @@ from sensor_msgs.msg import CompressedImage
 
 flags.DEFINE_integer('frame_width', 640, 'frame width.')
 flags.DEFINE_integer('frame_height', 360, 'frame height.')
-flags.DEFINE_integer('frame_rate', 10, 'frame rate.')
+flags.DEFINE_integer('frame_rate', 6, 'frame rate.')
 FLAGS = flags.FLAGS
 
 
