@@ -13,7 +13,7 @@ def get_config():
   config.gait_parameters = [2., np.pi, np.pi, 0., 0.5]
 
   # MPC-related settings
-  config.mpc_foot_friction = 0.5
+  config.mpc_foot_friction = 0.45
   config.mpc_body_mass = 110 / 9.8
   config.mpc_body_inertia = np.array(
       (0.057, 0, 0, 0, 0.057, 0, 0, 0, 0.064)) * 5.
