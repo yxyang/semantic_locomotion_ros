@@ -198,18 +198,30 @@ class Robot:
     return contacts
 
   @property
+  def foot_velocities_world_frame(self):
+    velocities = []
+    for link_id in self._foot_link_ids:
+      link_vels = np.array(
+          self._pybullet_client.getLinkState(self.quadruped,
+                                             link_id,
+                                             computeLinkVelocity=1)[-2])
+      velocities.append(link_vels)
+    return np.array(velocities)
+
+  @property
   def base_position(self):
     return np.array(
         self._pybullet_client.getBasePositionAndOrientation(self.quadruped)[0])
 
   @property
   def base_velocity(self):
-    return self._pybullet_client.getBaseVelocity(self.quadruped)[0]
+    return np.array(self._pybullet_client.getBaseVelocity(self.quadruped)[0])
 
   @property
   def base_orientation_rpy(self):
-    return self._pybullet_client.getEulerFromQuaternion(
-        self.base_orientation_quat)
+    return np.array(
+        self._pybullet_client.getEulerFromQuaternion(
+            self.base_orientation_quat))
 
   @property
   def base_orientation_quat(self):

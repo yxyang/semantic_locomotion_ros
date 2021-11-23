@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
 from typing import Any, Sequence, Tuple
 import sys
 
@@ -89,6 +90,9 @@ class TorqueStanceLegController:
     # TODO: add acc_weight support for mpc torque stance controller.
     self._robot = robot
     self._gait_generator = gait_generator
+    self._last_leg_state = gait_generator.desired_leg_state
+    self._last_timestamp = self._robot.time_since_reset
+    self._foot_local_position = self._robot.foot_positions_in_base_frame
     self._state_estimator = state_estimator
     self.desired_speed = desired_speed
     self.desired_twisting_speed = desired_twisting_speed
@@ -109,7 +113,7 @@ class TorqueStanceLegController:
     self._future_contact_estimate = np.ones((PLANNING_HORIZON_STEPS, 4))
 
   def reset(self, current_time):
-    del current_time
+    self._last_timestamp = current_time
     # Re-construct CPP solver to remove stochasticity due to warm-start
     self._cpp_mpc = convex_mpc.ConvexMpc(self._body_mass,
                                          self._body_inertia_list,
@@ -119,8 +123,24 @@ class TorqueStanceLegController:
                                          1e-5, convex_mpc.QPOASES)
 
   def update(self, current_time, future_contact_estimate=None):
-    del current_time
+    """Update robot state and compute desired foot position."""
     self._future_contact_estimate = future_contact_estimate
+    dt = current_time - self._last_timestamp
+    self._last_timestamp = current_time
+    new_leg_state = self._gait_generator.desired_leg_state
+    # Detects phase switch for each leg so we can remember the feet position at
+    # the beginning of the swing phase.
+    for leg_id, state in enumerate(new_leg_state):
+      if (state == gait_generator_lib.LegState.STANCE
+          and state != self._last_leg_state[leg_id]):
+        self._foot_local_position[leg_id] = (
+            self._robot.foot_positions_in_base_frame[leg_id])
+      else:
+        # self._foot_local_position[leg_id] -= self._robot.base_velocity * dt
+        self._foot_local_position[leg_id] -= np.array(
+            [self.desired_speed[0], self.desired_speed[1], 0]) * dt
+
+    self._last_leg_state = copy.deepcopy(new_leg_state)
 
   def get_action(self):
     """Computes the torque for stance legs."""
@@ -228,6 +248,8 @@ class TorqueStanceLegController:
     # print(contact_forces)
     # input("Any Key...")
 
+    desired_motor_angles = self._get_desired_motor_angles()
+
     action = {}
     for leg_id, force in contact_forces.items():
       # While "Lose Contact" is useful in simulation, in real environment it's
@@ -235,13 +257,35 @@ class TorqueStanceLegController:
       motor_torques = self._robot.map_contact_force_to_joint_torques(
           leg_id, force)
       for joint_id, torque in motor_torques.items():
-        action[joint_id] = MotorCommand(desired_position=0,
-                                        kp=0,
-                                        desired_velocity=0,
-                                        kd=0,
-                                        desired_extra_torque=torque)
+        action[joint_id] = MotorCommand(
+            desired_position=desired_motor_angles[joint_id],
+            kp=40,
+            desired_velocity=0,
+            kd=1,
+            desired_extra_torque=torque)
+        # action[joint_id] = MotorCommand(desired_position=0,
+        #                                 kp=0,
+        #                                 desired_velocity=0,
+        #                                 kd=0,
+        #                                 desired_extra_torque=torque)
     # print("After IK: {}".format(time.time() - start_time))
     return action, contact_forces
+
+  def _get_desired_motor_angles(self):
+    """Computes desired motor angle for impedance control."""
+    # Slip detection
+    # foot_velocities = self._robot.foot_velocities_world_frame
+    # foot_velocities = np.sqrt(np.sum(np.square(foot_velocities), axis=1))
+    # print(foot_velocities > 0.04)
+    # Convert from hip frame to body frame
+    motor_angles = dict()
+    for leg_id in range(4):
+      joint_idxs, joint_angles = \
+        self._robot.get_motor_angles_from_foot_position(
+            leg_id, self._foot_local_position[leg_id])
+      for idx, angle in zip(joint_idxs, joint_angles):
+        motor_angles[idx] = angle
+    return motor_angles
 
   def update_mpc_config(self, mpc_friction_coef: float, mpc_mass: float,
                         mpc_inertia: Sequence[float],
@@ -250,4 +294,4 @@ class TorqueStanceLegController:
     self._body_mass = mpc_mass
     self._body_inertia_list = mpc_inertia
     self._weights_list = mpc_weight
-    self.reset(None)
+    self.reset(self._robot.time_since_reset)

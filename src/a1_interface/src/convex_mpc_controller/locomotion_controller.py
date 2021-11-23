@@ -24,7 +24,7 @@ from robots import a1
 from robots import a1_robot
 from robots.motors import MotorCommand
 from robots.motors import MotorControlMode
-from worlds import abstract_world, uneven_world
+from worlds import abstract_world, plane_world
 
 
 def get_sim_conf():
@@ -51,7 +51,7 @@ class LocomotionController:
       use_real_robot: bool = False,
       show_gui: bool = False,
       logdir: str = 'logs/',
-      world_class: abstract_world.AbstractWorld = uneven_world.UnevenWorld):
+      world_class: abstract_world.AbstractWorld = plane_world.PlaneWorld):
     """Initializes the class.
 
     Args:
