@@ -20,6 +20,6 @@ def get_config():
   config.mpc_weight = (1., 1., 0, 0, 0, 10, 0., 0., .1, .3, .3, .0, 0)
 
   # Swing foot settings
-  config.foot_clearance_max = 0.15
+  config.foot_clearance_max = 0.18
   config.foot_clearance_land = -0.01
   return config
