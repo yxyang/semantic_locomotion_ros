@@ -37,10 +37,17 @@ def main(argv):
 
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
+    robot = controller.robot
     state = robot_state(is_safe=controller.is_safe,
                         controller_mode=controller.mode,
                         gait_type=controller.gait,
-                        timestamp=rospy.get_rostime())
+                        timestamp=rospy.get_rostime(),
+                        base_velocity=robot.base_velocity,
+                        base_orientation_rpy=robot.base_orientation_rpy,
+                        motor_angles=robot.motor_angles,
+                        motor_velocities=robot.motor_velocities,
+                        motor_torques=robot.motor_torques,
+                        foot_contacts=robot.foot_contacts)
     robot_state_publisher.publish(state)
     if controller.time_since_reset - controller.last_command_timestamp \
       > WATCHDOG_TIMEOUT_SECS:

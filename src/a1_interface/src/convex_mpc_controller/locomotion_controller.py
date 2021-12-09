@@ -360,6 +360,7 @@ class LocomotionController:
   def set_gait(self, command):
     self._desired_gait = command.type
 
+
   @property
   def is_safe(self):
     """Computes whether the robot is safe based on height and orientation."""
@@ -372,6 +373,10 @@ class LocomotionController:
     up_vec = rot_mat[2, 2]
     base_height = self._robot.base_position[2]
     return up_vec > 0.85 and base_height > 0.14
+
+  @property
+  def robot(self):
+    return self._robot
 
   @property
   def mode(self):
