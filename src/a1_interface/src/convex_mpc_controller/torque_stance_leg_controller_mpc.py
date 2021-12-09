@@ -135,6 +135,7 @@ class TorqueStanceLegController:
           and state != self._last_leg_state[leg_id]):
         self._foot_local_position[leg_id] = (
             self._robot.foot_positions_in_base_frame[leg_id])
+        self._foot_local_position[leg_id][-1] = -self._desired_body_height
       else:
         # self._foot_local_position[leg_id] -= self._robot.base_velocity * dt
         self._foot_local_position[leg_id] -= np.array(
@@ -259,7 +260,7 @@ class TorqueStanceLegController:
       for joint_id, torque in motor_torques.items():
         action[joint_id] = MotorCommand(
             desired_position=desired_motor_angles[joint_id],
-            kp=40,
+            kp=10,#40,
             desired_velocity=0,
             kd=1,
             desired_extra_torque=torque)
