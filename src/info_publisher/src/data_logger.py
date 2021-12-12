@@ -4,12 +4,12 @@ from datetime import datetime
 import getpass
 import os
 import pickle
+import time
 
 from absl import app
 from absl import flags
 
 import cv2
-from cv_bridge import CvBridge
 import numpy as np
 import rospy
 from sensor_msgs.msg import CompressedImage
@@ -31,7 +31,6 @@ class DataLogger:
   """Log segmentation results to file."""
   def __init__(self, logdir):
     self._logdir = logdir
-    self._bridge = CvBridge()
     self._camera_image = None
     self._robot_state = None
     self._log_state_publisher = rospy.Publisher('status/data_logger',
@@ -104,7 +103,6 @@ def main(argv):
         FLAGS.usb_drive_name))
 
   logdir = os.path.join(logdir, "data")
-
   data_logger = DataLogger(logdir)
   rospy.Subscriber("/perception/camera_image/compressed", CompressedImage,
                    data_logger.record_camera_image)
@@ -113,10 +111,9 @@ def main(argv):
   rospy.Subscriber("/robot_state", robot_state, data_logger.record_robot_state)
   rospy.init_node("data_logger", anonymous=True)
 
-  rate = rospy.Rate(0.1)
   while not rospy.is_shutdown():
     delete_old_files(logdir)
-    rate.sleep()
+    time.sleep(10)
 
 
 if __name__ == "__main__":
