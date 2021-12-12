@@ -17,7 +17,7 @@ from std_msgs.msg import String
 
 from a1_interface.msg import robot_state
 
-flags.DEFINE_string('usb_drive_name', 'ghost_memory', 'logdir.')
+flags.DEFINE_string('logdir', 'ghost_memory', 'logdir.')
 flags.DEFINE_integer('max_num_images', 100000,
                      'Maximum number of images to record.')
 flags.DEFINE_integer(
@@ -95,14 +95,11 @@ def delete_old_files(logdir):
 def main(argv):
   del argv  # unused
 
-  logdir = os.path.join("/media", getpass.getuser(), FLAGS.usb_drive_name)
+  logdir = os.path.join("/home", getpass.getuser(), FLAGS.logdir)
 
   if not os.path.exists(logdir):
-    rospy.loginfo("Logdir: {}".format(logdir))
-    raise RuntimeError("No USB drive with the name {} exists.".format(
-        FLAGS.usb_drive_name))
+    os.makedirs(logdir)
 
-  logdir = os.path.join(logdir, "data")
   data_logger = DataLogger(logdir)
   rospy.Subscriber("/perception/camera_image/compressed", CompressedImage,
                    data_logger.record_camera_image)
