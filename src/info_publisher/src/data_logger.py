@@ -54,16 +54,23 @@ class DataLogger:
       self._log_state_publisher.publish("No Robot State")
       return
 
-    filename_postfix = datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')
+    curr_time = datetime.now()
+    folder_name = curr_time.strftime('%Y_%m_%d_%H_%M')
+    filename_postfix = curr_time.strftime("%S_%f")
+
+    full_folder = os.path.join(self._logdir, folder_name)
+    if not os.path.exists(full_folder):
+      os.makedirs(full_folder)
+
     full_dir = os.path.join(
-        self._logdir, 'log_{}_{}.png'.format(filename_postfix, 'segmentation'))
+        full_folder, 'log_{}_{}.png'.format(filename_postfix, 'segmentation'))
 
     np_arr = np.fromstring(segmentation.data, np.uint8)
     cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     # cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
     cv2.imwrite(full_dir, cv_image)
 
-    full_dir = os.path.join(self._logdir,
+    full_dir = os.path.join(full_folder,
                             'log_{}_{}.png'.format(filename_postfix, 'camera'))
     np_arr = np.fromstring(self._camera_image.data, np.uint8)
     cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
@@ -71,7 +78,7 @@ class DataLogger:
     cv2.imwrite(full_dir, cv_image)
 
     full_dir = os.path.join(
-        self._logdir, 'log_{}_{}.pkl'.format(filename_postfix, 'robot_state'))
+        full_folder, 'log_{}_{}.pkl'.format(filename_postfix, 'robot_state'))
     pickle.dump(self._robot_state, open(full_dir, 'wb'))
     self._log_state_publisher.publish("Last frame: {}".format(
         datetime.now().strftime('%H:%M:%S')))
