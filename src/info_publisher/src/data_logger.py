@@ -105,9 +105,6 @@ def main(argv):
 
   logdir = os.path.join(logdir, "data")
 
-  if not os.path.exists(logdir):
-    os.makedirs(logdir)
-
   data_logger = DataLogger(logdir)
   rospy.Subscriber("/perception/camera_image/compressed", CompressedImage,
                    data_logger.record_camera_image)
