@@ -285,7 +285,6 @@ class LocomotionController:
       frame['foot_contact_force'] = self._robot.foot_forces
     if self._logdir:
       self._logs.append(frame)
-      print("Log size: {}".format(len(self._logs)))
       if len(self._logs) > 10000:
         self._flush_logging()
 

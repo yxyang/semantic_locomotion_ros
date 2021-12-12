@@ -13,6 +13,7 @@ import numpy as np
 import rospy
 from sensor_msgs.msg import CompressedImage
 import time
+from std_msgs.msg import String
 
 from a1_interface.msg import robot_state
 
@@ -32,6 +33,9 @@ class DataLogger:
     self._logdir = logdir
     self._camera_image = None
     self._robot_state = None
+    self._log_state_publisher = rospy.Publisher('status/data_logger',
+                                                String,
+                                                queue_size=1)
 
   def record_robot_state(self, robot_state_data):
     self._robot_state = robot_state_data
@@ -42,11 +46,11 @@ class DataLogger:
   def record_segmentation(self, segmentation):
     """Records segmentation and original image side by sdie."""
     if self._camera_image is None:
-      rospy.loginfo("No camera image captured, skipping...")
+      self._log_state_publisher.publish("No Cam Image")
       return
 
     if self._robot_state is None:
-      rospy.loginfo("No robot state captured, skipping...")
+      self._log_state_publisher.publish("No Robot State")
       return
 
     filename_postfix = datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')
@@ -68,6 +72,8 @@ class DataLogger:
     full_dir = os.path.join(
         self._logdir, 'log_{}_{}.pkl'.format(filename_postfix, 'robot_state'))
     pickle.dump(self._robot_state, open(full_dir, 'wb'))
+    self._log_state_publisher.publish("Last frame: {}".format(
+        datetime.now().strftime('%H:%M:%S')))
 
 
 def delete_old_files(logdir):
