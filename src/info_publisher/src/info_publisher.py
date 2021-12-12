@@ -49,10 +49,10 @@ def main(argv):
   controller_recorder = ControllerStateRecorder()
   rospy.Subscriber("robot_state", robot_state, state_recorder.record_state)
   rospy.Subscriber("estop", Bool, controller_recorder.record_estop)
-  robot_state_publisher = rospy.Publisher('robot_state_string',
+  robot_state_publisher = rospy.Publisher('status/robot_state_string',
                                           String,
                                           queue_size=1)
-  controller_state_publisher = rospy.Publisher('estop_string',
+  controller_state_publisher = rospy.Publisher('status/estop_string',
                                                String,
                                                queue_size=1)
   rospy.init_node("info_publisher", anonymous=True)
