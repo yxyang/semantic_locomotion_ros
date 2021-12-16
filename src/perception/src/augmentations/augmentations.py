@@ -73,7 +73,8 @@ class AdjustGamma:
 
   def __call__(self, img, mask):
     assert img.size == mask.size
-    return tf.adjust_gamma(img, random.uniform(1, 1 + self.gamma)), mask
+    return (tf.adjust_gamma(img, random.uniform(1 / self.gamma,
+                                                self.gamma)), mask)
 
 
 class AdjustSaturation:

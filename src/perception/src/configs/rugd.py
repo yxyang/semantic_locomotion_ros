@@ -40,7 +40,7 @@ def get_config():
 
   loss = ConfigDict()
   loss.name = "bootstrapped_cross_entropy"
-  loss.min_K = 4096
+  loss.min_k = 4096
   loss.loss_th = 0.3
   loss.size_average = True
   training.loss = loss

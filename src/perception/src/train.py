@@ -57,7 +57,7 @@ def train(cfg, writer, logger):
       data_path,
       is_transform=True,
       split=cfg["data"]["train_split"],
-      img_size=(cfg["data"]["img_rows"], cfg["data"]["img_cols"]),
+      image_size=(cfg["data"]["img_rows"], cfg["data"]["img_cols"]),
       augmentations=data_aug,
   )
 
@@ -65,7 +65,7 @@ def train(cfg, writer, logger):
       data_path,
       is_transform=True,
       split=cfg["data"]["val_split"],
-      img_size=(1024, 2048),
+      image_size=(1024, 2048),
   )
 
   n_classes = t_loader.n_classes
@@ -178,8 +178,8 @@ def train(cfg, writer, logger):
         writer.add_scalar("loss/train_loss", loss.item(), i + 1)
         time_meter.reset()
 
-      if (i + 1) % cfg["training"]["val_interval"] == 0 or (
-          i + 1) == cfg["training"]["train_iters"]:
+      if (i % cfg["training"]["val_interval"]
+          == 0) or (i + 1 == cfg["training"]["train_iters"]):
         torch.cuda.empty_cache()
         model.eval()
         loss_all = 0
