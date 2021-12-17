@@ -40,15 +40,31 @@ class ControllerStateRecorder:
     if self._estop:
       return "ESTOP!"
     else:
-      return ""
+      return
+
+
+class AutogaitRecorder:
+  def __init__(self):
+    self._autogait = False
+
+  def record_autogait(self, autogait):
+    self._autogait = autogait.data
+
+  def get_info_string(self):
+    if self._autogait:
+      return "Auto Gait"
+    else:
+      return "Manual Gait"
 
 
 def main(argv):
   del argv  # unused
   state_recorder = RobotStateRecorder()
   controller_recorder = ControllerStateRecorder()
+  autogait_recorder = AutogaitRecorder()
   rospy.Subscriber("robot_state", robot_state, state_recorder.record_state)
   rospy.Subscriber("estop", Bool, controller_recorder.record_estop)
+  rospy.Subscriber("autogait", Bool, autogait_recorder.record_autogait)
   robot_state_publisher = rospy.Publisher('status/robot_state_string',
                                           String,
                                           queue_size=1)
@@ -59,7 +75,8 @@ def main(argv):
 
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
-    robot_state_publisher.publish(state_recorder.get_info_string())
+    robot_state_publisher.publish(state_recorder.get_info_string() + "\n" +
+                                  autogait_recorder.get_info_string())
     controller_state_publisher.publish(controller_recorder.get_info_string())
     rate.sleep()
 
