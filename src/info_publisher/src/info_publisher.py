@@ -75,7 +75,7 @@ def main(argv):
 
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
-    robot_state_publisher.publish(state_recorder.get_info_string() + "\n" +
+    robot_state_publisher.publish(state_recorder.get_info_string() +
                                   autogait_recorder.get_info_string())
     controller_state_publisher.publish(controller_recorder.get_info_string())
     rate.sleep()
