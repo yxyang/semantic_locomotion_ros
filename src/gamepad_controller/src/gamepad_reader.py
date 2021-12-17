@@ -3,7 +3,7 @@
 from absl import app
 from absl import flags
 import rospy
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32
 
 from a1_interface.msg import controller_mode
 from a1_interface.msg import gait_type
@@ -11,7 +11,8 @@ from a1_interface.msg import robot_state
 from a1_interface.msg import speed_command
 from gamepad_reader_lib import Gamepad
 
-flags.DEFINE_bool('publish_gaits', True, 'whether to publish gait commands.')
+import fixed_region_gait_policy
+
 FLAGS = flags.FLAGS
 
 
@@ -43,10 +44,16 @@ def main(_):
                                             speed_command,
                                             queue_size=1)
   estop_publisher = rospy.Publisher('estop', Bool, queue_size=1)
+  autogait_publisher = rospy.Publisher('autogait', Bool, queue_size=1)
+
+  # Define listeners
   robot_state_listener = RobotStateListener()
   rospy.Subscriber('robot_state', robot_state, robot_state_listener.callback)
-  if FLAGS.publish_gaits:
-    gait_type_publisher = rospy.Publisher('gait_type', gait_type, queue_size=1)
+  policy = fixed_region_gait_policy.FixedRegionGaitPolicy()
+  rospy.Subscriber("/perception/traversability_score", Float32,
+                   policy.update_score)
+
+  gait_type_publisher = rospy.Publisher('gait_type', gait_type, queue_size=1)
   rospy.init_node('gamepad_controller', anonymous=True)
 
   rate = rospy.Rate(20)
@@ -57,7 +64,10 @@ def main(_):
     controller_mode_publisher.publish(gamepad.mode_command)
     speed_command_publisher.publish(gamepad.speed_command)
     estop_publisher.publish(gamepad.estop_flagged)
-    if FLAGS.publish_gaits:
+    autogait_publisher.publish(gamepad.use_autogait)
+    if gamepad.use_autogait:
+      gait_type_publisher.publish(policy.get_gait_action())
+    else:
       gait_type_publisher.publish(gamepad.gait_command)
     rate.sleep()
 

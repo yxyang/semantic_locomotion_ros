@@ -1,6 +1,6 @@
 <launch>
   <include file="$(find perception)/launch/realsense_segmentation.launch" />
-  <node pkg="gamepad_controller" type="gamepad_reader.py" name="gamepad_controller" args="--publish_gaits=True" respawn="true"/>
-  <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=True --logdir=logs/" respawn="true"/>
+  <node pkg="gamepad_controller" type="gamepad_reader.py" name="gamepad_controller" args="" respawn="true"/>
+  <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=True" respawn="true"/>
 </launch>
 

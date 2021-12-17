@@ -19,7 +19,7 @@ MAX_ABS_VAL = 32768
 ALLOWED_MODES = [
     controller_mode.STAND, controller_mode.WALK, controller_mode.DOWN
 ]
-ALLOWED_GAITS = [gait_type.CRAWL, gait_type.SLOW_TROT, gait_type.FAST_TROT]
+ALLOWED_GAITS = [gait_type.SLOW, gait_type.MID, gait_type.FAST]
 
 
 def _interpolate(raw_reading, max_raw_reading, new_scale):
@@ -53,6 +53,7 @@ class Gamepad:
     self._lb_pressed = False
     self._rb_pressed = False
     self._lj_pressed = False
+    self._rj_pressed = False
     self._walk_height = 0.
     self._foot_height = 0.
 
@@ -66,6 +67,7 @@ class Gamepad:
     self.vx, self.vy, self.wz = 0., 0., 0.
     self._max_acc = max_acc
     self._estop_flagged = False
+    self._use_autogait = False
     self.is_running = True
     self.last_timestamp = time.time()
 
@@ -109,7 +111,10 @@ class Gamepad:
         rospy.loginfo("Switched control mode to {}.".format(self._mode))
     elif event.ev_type == 'Key' and event.code == 'BTN_THUMBL':
       self._lj_pressed = bool(event.state)
-
+    elif event.ev_type == 'Key' and event.code == 'BTN_THUMBR':
+      self._rj_pressed = bool(event.state)
+      if self._rj_pressed:
+        self._use_autogait = not self._use_autogait
     elif event.ev_type == 'Absolute' and event.code == 'ABS_RX':
       # Left Joystick L/R axis
       self.vy_raw = _interpolate(-event.state, MAX_ABS_VAL, self._vel_scale_y)
@@ -157,6 +162,11 @@ class Gamepad:
   @property
   def estop_flagged(self):
     return self._estop_flagged
+
+  @property
+  def use_autogait(self):
+    return self._use_autogait
+
 
   def flag_estop(self):
     if not self._estop_flagged:

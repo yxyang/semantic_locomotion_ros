@@ -7,44 +7,44 @@ import numpy as np
 import rospkg
 import rospy
 import torch
-import yaml
 from sensor_msgs.msg import CompressedImage
 
+from configs import rugd_a1
 from models import get_model
 from utils import convert_state_dict
 
 
 def _convert_segmentation_map(raw_segmentation_map):
-  color_val = np.array([[0., 1., 0.], [1., 1., 0.], [1., .5, 0.], [1., 0., 0.],
-                        [0., 0., 1.]])
+  color_val = np.array([[176., 0, 0], [176, 118, 0], [118, 176, 0],
+                        [0, 176, 0]]) / 255.
   return color_val[raw_segmentation_map]
 
 
 class FixedRegionMapper:
   """Computes traversability score based on fixed image crop."""
-  def __init__(self, cfg_dir='model_configs/hardnet.yml'):
+  def __init__(self, config=rugd_a1.get_config()):
     self._camera_image = None
     self._image_height = None
     self._image_width = None
     self._image_array = None
-    self._segmentation_model = self._load_segmentation_model(cfg_dir)
+    self._segmentation_model = self._load_segmentation_model(config)
     self._last_segmentation_map = None
 
-  def _load_segmentation_model(self, cfg_dir: str) -> torch.nn.Module:
+  def _load_segmentation_model(self, config) -> torch.nn.Module:
     """Loads the trained segmentation model."""
     rospack = rospkg.RosPack()
     package_path = os.path.join(rospack.get_path('perception'), "src")
 
-    cfg = yaml.load(open(os.path.join(package_path, cfg_dir), 'r'))
-    n_classes = 5
+    n_classes = 4
     if torch.cuda.is_available():
       self._device = torch.device("cuda")
     else:
       self._device = torch.device("cpu")
 
-    model = get_model(cfg["model"], n_classes).to(self._device)
-    model_dir = os.path.join(package_path, "model_ckpts",
-                             "hardnet_rugd4_aug5_sky.pkl")
+    model = get_model(config["model"], n_classes).to(self._device)
+    model_dir = os.path.join(package_path, "saved_models",
+                             "RUGD_a1_sgd_momentum",
+                             "hardnet_rugd_a1_best_model.pkl")
     state = convert_state_dict(torch.load(model_dir)["model_state"])
     model.load_state_dict(state)
     return model
@@ -54,14 +54,14 @@ class FixedRegionMapper:
     mask = np.zeros((self._image_height, self._image_width))
     mask_boundary = np.zeros_like(mask)
 
-    left_bottom = [0, self._image_height]
-    right_bottom = [self._image_width, self._image_height]
+    left_bottom = [0.25 * self._image_width, self._image_height]
+    right_bottom = [0.75 * self._image_width, self._image_height]
     left_top = [
-        0.33 * self._image_width,
+        0.4 * self._image_width,
         0.5 * self._image_height,
     ]
     right_top = [
-        0.66 * self._image_width,
+        0.6 * self._image_width,
         0.5 * self._image_height,
     ]
     cv2.fillConvexPoly(
@@ -79,7 +79,19 @@ class FixedRegionMapper:
     return mask, mask_boundary
 
   def _compute_segmentation_map(self) -> np.ndarray:
+    """Preprocesses image and queries model for segmentation result."""
     img = self._image_array.copy()
+
+    # Normalize on brightness
+    img_float = img  # / 255.
+    brightness = np.mean(0.2126 * img_float[..., 2] +
+                         0.7152 * img_float[..., 1] +
+                         0.0722 * img_float[..., 0])
+    desired_brightness = 0.66
+    img_float = np.clip(img_float * desired_brightness / brightness, 0, 1)
+    img = img_float  # * 255
+
+    # Get the right shape
     img = np.rollaxis(img, -1, 0)
     img = img[np.newaxis, ...]
     img = torch.tensor(img).to(self._device)

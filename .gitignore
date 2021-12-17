@@ -6,6 +6,9 @@ src/image_transport_plugins
 src/ros_numpy
 src/theora_image_transport
 
+# MP4 log files
+*.mp4
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

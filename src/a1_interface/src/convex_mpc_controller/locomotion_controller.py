@@ -19,7 +19,7 @@ from convex_mpc_controller import com_velocity_estimator
 from convex_mpc_controller import offset_gait_generator
 from convex_mpc_controller import raibert_swing_leg_controller
 from convex_mpc_controller import torque_stance_leg_controller_mpc
-from convex_mpc_controller.gait_configs import crawl, slow_trot, fast_trot
+from convex_mpc_controller.gait_configs import slow, mid, fast
 from robots import a1
 from robots import a1_robot
 from robots.motors import MotorCommand
@@ -85,7 +85,7 @@ class LocomotionController:
     self._mode = controller_mode.DOWN
     self.set_controller_mode(controller_mode(mode=controller_mode.STAND))
     self._gait = None
-    self._desired_gait = gait_type.CRAWL
+    self._desired_gait = gait_type.SLOW
     self._handle_gait_switch()
     self.run_thread = threading.Thread(target=self.run)
     self.run_thread.start()
@@ -301,15 +301,15 @@ class LocomotionController:
     """Handles gait switch commands and update corresponding controllers."""
     if self._gait == self._desired_gait:
       return
-    if self._desired_gait == gait_type.CRAWL:
-      rospy.loginfo("Switched to Crawling gait.")
-      self._gait_config = crawl.get_config()
-    elif self._desired_gait == gait_type.SLOW_TROT:
-      rospy.loginfo("Switched  to Trotting gait.")
-      self._gait_config = slow_trot.get_config()
+    if self._desired_gait == gait_type.SLOW:
+      rospy.loginfo("Switched to Slow gait.")
+      self._gait_config = slow.get_config()
+    elif self._desired_gait == gait_type.MID:
+      rospy.loginfo("Switched  to Medium gait.")
+      self._gait_config = mid.get_config()
     else:
-      rospy.loginfo("Switched to Fast-Trotting gait.")
-      self._gait_config = fast_trot.get_config()
+      rospy.loginfo("Switched to Fast gait.")
+      self._gait_config = fast.get_config()
 
     self._gait = self._desired_gait
     self._gait_generator.gait_params = self._gait_config.gait_parameters

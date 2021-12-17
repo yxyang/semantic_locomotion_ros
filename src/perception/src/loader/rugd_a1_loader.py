@@ -109,37 +109,17 @@ class RUGDA1Loader(data.Dataset):
         :param image:
         :param lbl:
     """
-    image = np.array(
-        Image.fromarray(image).resize(
-            (self.image_size[1], self.image_size[0])))  # uint8 with RGB mode
-    image = image.astype(np.float64)
 
-    # Debug: auto brightness
     img_float = image / 255.
     brightness = np.mean(0.2126 * img_float[..., 2] +
                          0.7152 * img_float[..., 1] +
                          0.0722 * img_float[..., 0])
-    desired_brightness = 0.5
+    desired_brightness = 0.66
     img_float = np.clip(img_float * desired_brightness / brightness, 0, 1)
     image = img_float * 255
 
     # NHWC -> NCHW
     image = image.transpose(2, 0, 1)
-
-    classes = np.unique(lbl)
-    lbl = lbl.astype(float)
-    lbl = np.array(
-        Image.fromarray(lbl).resize((self.image_size[1], self.image_size[0]),
-                                    resample=Image.NEAREST))
-    lbl = lbl.astype(int)
-
-    if not np.all(classes == np.unique(lbl)):
-      print("WARN: resizing labels yielded fewer classes")
-
-    if not np.all(np.unique(lbl[lbl != self.ignore_index]) < self.n_classes):
-      print(np.unique(lbl[lbl != self.ignore_index]))
-      raise ValueError("Segmentation map contained invalid class values")
-
     image = torch.from_numpy(image).float()
     lbl = torch.from_numpy(lbl).long()
 
@@ -155,9 +135,9 @@ class RUGDA1Loader(data.Dataset):
       g[segmap == l] = self.class_colors[l][1]
       b[segmap == l] = self.class_colors[l][2]
     rgb = np.zeros(np.concatenate([segmap.shape, [3]]))
-    rgb[..., 0] = r / 255.0
-    rgb[..., 1] = g / 255.0
-    rgb[..., 2] = b / 255.0
+    rgb[..., 0] = r
+    rgb[..., 1] = g
+    rgb[..., 2] = b
     return rgb
 
   def decode_segmap_id(self, temp):
