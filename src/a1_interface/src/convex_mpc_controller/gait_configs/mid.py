@@ -6,11 +6,11 @@ import numpy as np
 def get_config():
   """Congigurations for trotting gait."""
   config = ml_collections.ConfigDict()
-  config.max_forward_speed = 0.8
+  config.max_forward_speed = 1.4
   config.max_side_speed = 0.7
   config.max_rot_speed = 1.
 
-  config.gait_parameters = [2., np.pi, np.pi, 0., 0.5]
+  config.gait_parameters = [2.5, np.pi, np.pi, 0., 0.5]
 
   # MPC-related settings
   config.mpc_foot_friction = 0.45
@@ -20,6 +20,6 @@ def get_config():
   config.mpc_weight = (1., 1., 0, 0, 0, 10, 0., 0., .1, .1, .1, .0, 0)
 
   # Swing foot settings
-  config.foot_clearance_max = 0.18
+  config.foot_clearance_max = 0.14
   config.foot_clearance_land = -0.01
   return config

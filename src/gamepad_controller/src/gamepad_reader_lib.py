@@ -35,8 +35,8 @@ class Gamepad:
   3) Use the right joystick for rotation around the z-axis.
   """
   def __init__(self,
-               vel_scale_x: float = .5,
-               vel_scale_y: float = .5,
+               vel_scale_x: float = 1.,
+               vel_scale_y: float = 1.,
                vel_scale_rot: float = 1.,
                max_acc: float = .5):
     """Initialize the gamepad controller.
