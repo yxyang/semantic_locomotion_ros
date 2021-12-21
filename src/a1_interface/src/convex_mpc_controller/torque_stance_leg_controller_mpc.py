@@ -140,7 +140,7 @@ class TorqueStanceLegController:
         # self._foot_local_position[leg_id] -= self._robot.base_velocity * dt
         self._foot_local_position[leg_id] -= np.array(
             [self.desired_speed[0], self.desired_speed[1], 0]) * dt
-
+    self._foot_local_position[:, 2] = self._robot.foot_positions_in_base_frame[:, 2]
     self._last_leg_state = copy.deepcopy(new_leg_state)
 
   def get_action(self):
@@ -260,7 +260,7 @@ class TorqueStanceLegController:
       for joint_id, torque in motor_torques.items():
         action[joint_id] = MotorCommand(
             desired_position=desired_motor_angles[joint_id],
-            kp=10,#40,
+            kp=10,
             desired_velocity=0,
             kd=1,
             desired_extra_torque=torque)
@@ -274,10 +274,6 @@ class TorqueStanceLegController:
 
   def _get_desired_motor_angles(self):
     """Computes desired motor angle for impedance control."""
-    # Slip detection
-    # foot_velocities = self._robot.foot_velocities_world_frame
-    # foot_velocities = np.sqrt(np.sum(np.square(foot_velocities), axis=1))
-    # print(foot_velocities > 0.04)
     # Convert from hip frame to body frame
     motor_angles = dict()
     for leg_id in range(4):

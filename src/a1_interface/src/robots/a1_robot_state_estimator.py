@@ -102,11 +102,11 @@ class A1RobotStateEstimator:
 
     if observed_velocities:
       observed_velocities = np.mean(observed_velocities, axis=0)
-      # multiplier = np.clip(
-      #     1 + (np.sqrt(observed_velocities[0]**2 + \
-      #     observed_velocities[1]**2) -
-      #          0.3), 1, 1.3)
-      # observed_velocities[0] *= 1.3
+      multiplier = np.clip(
+          1 + (np.sqrt(observed_velocities[0]**2 + \
+          observed_velocities[1]**2) -
+               0.3), 1, 1.3)
+      observed_velocities[0] *= multiplier#1.3
       self.filter.update(observed_velocities)
 
     self._estimated_velocity = self.filter.x.copy()

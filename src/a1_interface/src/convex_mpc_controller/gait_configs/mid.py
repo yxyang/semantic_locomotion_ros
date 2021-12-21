@@ -6,7 +6,7 @@ import numpy as np
 def get_config():
   """Congigurations for trotting gait."""
   config = ml_collections.ConfigDict()
-  config.max_forward_speed = 1.4
+  config.max_forward_speed = 1.2
   config.max_side_speed = 0.7
   config.max_rot_speed = 1.
 
