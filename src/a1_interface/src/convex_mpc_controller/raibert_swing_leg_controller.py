@@ -14,12 +14,10 @@ _KP = np.array([0.01, 0.01, 0.01]) * 0.
 # collision.
 _FOOT_CLEARANCE_M = 0.01
 
-
 # def cubic_bezier(x0: np.ndarray, x1: np.ndarray,
 #                  t: float) -> Sequence[float]:
 #   progress = t**3 + 3 * t**2 * (1 - t)
 #   return x0 + progress * (x1 - x0)
-
 
 # def _gen_swing_foot_trajectory(input_phase: float, start_pos: np.ndarray,
 #                                end_pos: np.ndarray,
@@ -36,6 +34,7 @@ _FOOT_CLEARANCE_M = 0.01
 #     t = (input_phase - cutoff_phase) / (1 - cutoff_phase)
 #     foot_pos = cubic_bezier(mid_pos, end_pos, t)
 #   return foot_pos
+
 
 def _gen_parabola(phase: float, start: float, mid: float, end: float) -> float:
   """Gets a point on a parabola y = a x^2 + b x + c.
@@ -61,7 +60,8 @@ def _gen_parabola(phase: float, start: float, mid: float, end: float) -> float:
 
 
 def _gen_swing_foot_trajectory(input_phase: float, start_pos: Sequence[float],
-                               end_pos: Sequence[float], foot_height: float) -> Tuple[float]:
+                               end_pos: Sequence[float],
+                               foot_height: float) -> Tuple[float]:
   """Generates the swing trajectory using a parabola.
   Args:
     input_phase: the swing/stance phase value between [0, 1].
@@ -104,7 +104,7 @@ class RaibertSwingLegController:
   def __init__(self, robot: Any, gait_generator: Any, state_estimator: Any,
                desired_speed: Tuple[float, float,
                                     float], desired_twisting_speed: float,
-               desired_height: float, foot_landing_clearance: float,
+               desired_body_height: float, foot_landing_clearance: float,
                foot_height: float, use_raibert_heuristic: bool):
     """Initializes the class.
 
@@ -114,7 +114,7 @@ class RaibertSwingLegController:
       state_estimator: Estiamtes the CoM speeds.
       desired_speed: Behavior parameters. X-Y speed.
       desired_twisting_speed: Behavior control parameters.
-      desired_height: Desired standing height.
+      desired_body_height: Desired standing height.
       foot_landing_clearance: The foot clearance on the ground at the end of
         the swing cycle.
     """
@@ -124,9 +124,10 @@ class RaibertSwingLegController:
     self._last_leg_state = gait_generator.desired_leg_state
     self.desired_speed = np.array((desired_speed[0], desired_speed[1], 0))
     self.desired_twisting_speed = desired_twisting_speed
-    self._desired_height = desired_height
+    self._desired_body_height = desired_body_height
+    self._foot_landing_clearance = foot_landing_clearance
     self._desired_landing_height = np.array(
-        (0, 0, desired_height - foot_landing_clearance))
+        (0, 0, self._desired_body_height - self._foot_landing_clearance))
 
     self._phase_switch_foot_local_position = None
     self.foot_placement_position = np.zeros(12)
@@ -172,12 +173,23 @@ class RaibertSwingLegController:
 
   @property
   def foot_landing_clearance(self):
-    return self._desired_height - self._desired_landing_height[2]
+    return self._foot_landing_clearance
 
   @foot_landing_clearance.setter
-  def foot_landing_clearance(self, landing_clearance: float) -> None:
+  def foot_landing_clearance(self, foot_landing_clearance: float) -> None:
+    self._foot_landing_clearance = foot_landing_clearance
     self._desired_landing_height = np.array(
-        (0., 0., self._desired_height - landing_clearance))
+        (0., 0., self._desired_body_height - self._foot_landing_clearance))
+
+  @property
+  def desired_body_height(self) -> float:
+    return self._desired_body_height
+
+  @desired_body_height.setter
+  def desired_body_height(self, desired_body_height: float) -> None:
+    self._desired_body_height = desired_body_height
+    self._desired_landing_height = np.array(
+        (0., 0., self._desired_body_height - self._foot_landing_clearance))
 
   def get_action(self) -> Mapping[Any, Any]:
     """Computes action for swing legs."""

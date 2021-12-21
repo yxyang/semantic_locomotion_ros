@@ -141,7 +141,7 @@ class LocomotionController:
           self._state_estimator,
           desired_speed=desired_speed,
           desired_twisting_speed=desired_twisting_speed,
-          desired_height=self._robot.mpc_body_height,
+          desired_body_height=self._robot.mpc_body_height,
           foot_landing_clearance=0.01,
           foot_height=0.1,
           use_raibert_heuristic=True)
@@ -316,9 +316,12 @@ class LocomotionController:
     self._swing_controller.foot_height = self._gait_config.foot_clearance_max
     self._swing_controller.foot_landing_clearance = \
       self._gait_config.foot_clearance_land
+    self._swing_controller.desired_body_height = \
+      self._gait_config.desired_body_height
     self._stance_controller.update_mpc_config(
         self._gait_config.mpc_foot_friction, self._gait_config.mpc_body_mass,
-        self._gait_config.mpc_body_inertia, self._gait_config.mpc_weight)
+        self._gait_config.mpc_body_inertia, self._gait_config.mpc_weight,
+        self._gait_config.desired_body_height)
 
   def run(self):
     """The low-level control thread."""
@@ -358,7 +361,6 @@ class LocomotionController:
 
   def set_gait(self, command):
     self._desired_gait = command.type
-
 
   @property
   def is_safe(self):

@@ -140,7 +140,9 @@ class TorqueStanceLegController:
         # self._foot_local_position[leg_id] -= self._robot.base_velocity * dt
         self._foot_local_position[leg_id] -= np.array(
             [self.desired_speed[0], self.desired_speed[1], 0]) * dt
-    self._foot_local_position[:, 2] = self._robot.foot_positions_in_base_frame[:, 2]
+    self._foot_local_position[:,
+                              2] = self._robot.foot_positions_in_base_frame[:,
+                                                                            2]
     self._last_leg_state = copy.deepcopy(new_leg_state)
 
   def get_action(self):
@@ -286,9 +288,11 @@ class TorqueStanceLegController:
 
   def update_mpc_config(self, mpc_friction_coef: float, mpc_mass: float,
                         mpc_inertia: Sequence[float],
-                        mpc_weight: Sequence[float]) -> None:
+                        mpc_weight: Sequence[float],
+                        desired_body_height: float) -> None:
     self._friction_coeffs = np.ones(4) * mpc_friction_coef
     self._body_mass = mpc_mass
     self._body_inertia_list = mpc_inertia
     self._weights_list = mpc_weight
     self.reset(self._robot.time_since_reset)
+    self._desired_body_height = desired_body_height

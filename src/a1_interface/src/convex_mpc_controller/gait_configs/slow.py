@@ -19,7 +19,8 @@ def get_config():
       (0.057, 0, 0, 0, 0.057, 0, 0, 0, 0.064)) * 5.
   config.mpc_weight = (1., 1., 0, 0, 0, 10, 0., 0., .1, .1, .1, .0, 0)
 
+  config.desired_body_height = 0.3
   # Swing foot settings
-  config.foot_clearance_max = 0.18
+  config.foot_clearance_max = 0.22
   config.foot_clearance_land = -0.01
   return config
