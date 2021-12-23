@@ -137,9 +137,9 @@ class TorqueStanceLegController:
             self._robot.foot_positions_in_base_frame[leg_id])
         self._foot_local_position[leg_id][-1] = -self._desired_body_height
       else:
-        # self._foot_local_position[leg_id] -= self._robot.base_velocity * dt
+        # self._foot_local_position[leg_id][:2] -= self._robot.base_velocity[:2] * dt
         self._foot_local_position[leg_id] -= np.array(
-            [self.desired_speed[0], self.desired_speed[1], 0]) * dt
+             [self.desired_speed[0], self.desired_speed[1], 0]) * dt
     self._foot_local_position[:,
                               2] = self._robot.foot_positions_in_base_frame[:,
                                                                             2]

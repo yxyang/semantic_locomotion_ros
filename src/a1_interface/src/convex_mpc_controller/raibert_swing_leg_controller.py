@@ -24,9 +24,9 @@ _FOOT_CLEARANCE_M = 0.01
 #                                foot_height: float) -> Sequence[float]:
 #   """Computes swing foot trajectory based on phase and key points."""
 #   mid_z = max(end_pos[2], start_pos[2]) + foot_height
-#   mid_pos = (start_pos + end_pos) / 2
+#   mid_pos = start_pos * 0.3 + end_pos * 0.7
 #   mid_pos[2] = mid_z
-#   cutoff_phase = 0.4
+#   cutoff_phase = 0.3
 #   if input_phase < cutoff_phase:
 #     t = input_phase / cutoff_phase
 #     foot_pos = cubic_bezier(start_pos, mid_pos, t)
@@ -237,17 +237,22 @@ class RaibertSwingLegController:
       multiplier = -self._desired_landing_height[
           2] / gravity_projection_vector[2]
       foot_target_position[:2] += gravity_projection_vector[:2] * multiplier
-      # logging.info("Compsenation: {}".format(gravity_projection_vector[:2] *
+      # print("Compsenation: {}".format(gravity_projection_vector[:2] *
       #                                        multiplier))
-      # logging.info("Foot Target: {}".format(foot_target_position -
-      #                                       np.array((hip_offset[0],
-      #                                                 hip_offset[1], 0))))
+      
 
       foot_position = _gen_swing_foot_trajectory(
           self._gait_generator.normalized_phase[leg_id],
           self._phase_switch_foot_local_position[leg_id], foot_target_position,
           self._foot_height)
-
+      
+      # print("Foot Landing: {}".format(foot_target_position - np.array((hip_offset[0],
+      #                                                 hip_offset[1], 0))))
+      # print("Curr Foot Target: {}".format(foot_position -
+      #                                       np.array((hip_offset[0],
+      #                                                 hip_offset[1], 0))))
+      # print("Foot Pos: {}".format(
+      #   self._robot.foot_positions_in_base_frame[leg_id] - np.array((hip_offset[0], hip_offset[1], 0))))
       joint_ids, joint_angles = (
           self._robot.get_motor_angles_from_foot_position(
               leg_id, foot_position))
