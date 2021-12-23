@@ -66,6 +66,18 @@ class RandomCrop:
         (x1, y1, x1 + cw, y1 + ch)), mask.crop((x1, y1, x1 + cw, y1 + ch)))
 
 
+class GaussianBlur:
+  def __init__(self, max_sigma, kernel_size=11):
+    self.kernel_size = kernel_size
+    self.max_sigma = max_sigma
+
+  def __call__(self, img, mask):
+    img = tf.gaussian_blur(img,
+                           kernel_size=self.kernel_size,
+                           sigma=np.random.uniform(0, self.max_sigma))
+    return img, mask
+
+
 class AdjustGamma:
   """Adjusts the gamma value of image."""
   def __init__(self, gamma):

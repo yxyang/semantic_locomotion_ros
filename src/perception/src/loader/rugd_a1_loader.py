@@ -109,11 +109,11 @@ class RUGDA1Loader(data.Dataset):
         :param image:
         :param lbl:
     """
-
+    # RGB format
     img_float = image / 255.
-    brightness = np.mean(0.2126 * img_float[..., 2] +
+    brightness = np.mean(0.2126 * img_float[..., 0] +
                          0.7152 * img_float[..., 1] +
-                         0.0722 * img_float[..., 0])
+                         0.0722 * img_float[..., 2])
     desired_brightness = 0.66
     img_float = np.clip(img_float * desired_brightness / brightness, 0, 1)
     image = img_float * 255

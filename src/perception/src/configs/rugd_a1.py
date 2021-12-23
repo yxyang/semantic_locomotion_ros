@@ -34,6 +34,7 @@ def get_config():
   augmentations.saturation = 0.5
   augmentations.hue = 0.1
   augmentations.gamma = 2
+  augmentations.gaussian_blur = 1
   training.augmentations = augmentations
 
   optimizer = ConfigDict()

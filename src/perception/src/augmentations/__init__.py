@@ -1,14 +1,11 @@
 """A collection of data augmentation methods."""
 import logging
 
-from augmentations.augmentations import (AdjustBrightness, AdjustContrast,
-                                         AdjustGamma, AdjustHue,
-                                         AdjustSaturation, CenterCrop, Compose,
-                                         RandomCrop, RandomHorizontallyFlip,
-                                         RandomRotate, RandomScaleCrop,
-                                         RandomSized, RandomSizedCrop,
-                                         RandomTranslate, RandomVerticallyFlip,
-                                         Scale)
+from augmentations.augmentations import (
+    AdjustBrightness, AdjustContrast, AdjustGamma, AdjustHue, AdjustSaturation,
+    CenterCrop, Compose, GaussianBlur, RandomCrop, RandomHorizontallyFlip,
+    RandomRotate, RandomScaleCrop, RandomSized, RandomSizedCrop,
+    RandomTranslate, RandomVerticallyFlip, Scale)
 
 logger = logging.getLogger("ptsemseg")
 
@@ -28,6 +25,7 @@ key2aug = {
     "rotate": RandomRotate,
     "translate": RandomTranslate,
     "ccrop": CenterCrop,
+    "gaussian_blur": GaussianBlur
 }
 
 

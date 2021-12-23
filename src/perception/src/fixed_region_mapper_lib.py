@@ -29,6 +29,10 @@ class FixedRegionMapper:
     self._image_array = None
     self._segmentation_model = self._load_segmentation_model(config)
     self._last_segmentation_map = None
+    self._processed_image_publisher = rospy.Publisher(
+        '/perception/processed_camera_image/compressed',
+        CompressedImage,
+        queue_size=1)
 
   def _load_segmentation_model(self, config) -> torch.nn.Module:
     """Loads the trained segmentation model."""
@@ -44,9 +48,10 @@ class FixedRegionMapper:
     model = get_model(config["model"], n_classes).to(self._device)
     model_dir = os.path.join(package_path, "saved_models",
                              "RUGD_a1_sgd_momentum",
-                             "hardnet_rugd_a1_best_model.pkl")
+                             "hardnet_rugd_a1_1500.pkl")
     state = convert_state_dict(torch.load(model_dir)["model_state"])
     model.load_state_dict(state)
+    model.eval()
     return model
 
   def _get_segmentation_mask(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -83,13 +88,23 @@ class FixedRegionMapper:
     img = self._image_array.copy()
 
     # Normalize on brightness
-    img_float = img  # / 255.
-    brightness = np.mean(0.2126 * img_float[..., 2] +
+    img_float = img / 255.
+    brightness = np.mean(0.2126 * img_float[..., 0] +
                          0.7152 * img_float[..., 1] +
-                         0.0722 * img_float[..., 0])
+                         0.0722 * img_float[..., 2])
+    print("Before: mean per channel: {}".format(np.mean(img_float,
+                                                        axis=(0, 1))))
     desired_brightness = 0.66
     img_float = np.clip(img_float * desired_brightness / brightness, 0, 1)
-    img = img_float  # * 255
+    print("After: mean per channel: {}".format(np.mean(img_float,
+                                                       axis=(0, 1))))
+    img = img_float * 255
+
+    msg = CompressedImage()
+    msg.header.stamp = rospy.Time.now()
+    msg.format = "png"
+    msg.data = np.array(cv2.imencode(".png", img)[1]).tostring()
+    self._processed_image_publisher.publish(msg)
 
     # Get the right shape
     img = np.rollaxis(img, -1, 0)
@@ -127,7 +142,8 @@ class FixedRegionMapper:
   def set_camera_image(self, image):
     self._camera_image = image
     buffer = np.fromstring(image.data, np.uint8)
-    self._image_array = np.array(cv2.imdecode(buffer, cv2.IMREAD_COLOR),
-                                 dtype=np.float32) / 255.
+    cv_image = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+    cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+    self._image_array = np.array(cv_image, dtype=np.float32)
     self._image_height = self._image_array.shape[0]  # pylint: disable=E1136
     self._image_width = self._image_array.shape[1]  # pylint: disable=E1136
