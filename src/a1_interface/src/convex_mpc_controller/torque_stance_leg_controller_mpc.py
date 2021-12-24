@@ -262,7 +262,7 @@ class TorqueStanceLegController:
       for joint_id, torque in motor_torques.items():
         action[joint_id] = MotorCommand(
             desired_position=desired_motor_angles[joint_id],
-            kp=10,
+            kp=20,#10,
             desired_velocity=0,
             kd=1,
             desired_extra_torque=torque)

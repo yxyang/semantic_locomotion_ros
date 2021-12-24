@@ -38,7 +38,7 @@ class Gamepad:
                vel_scale_x: float = 1.,
                vel_scale_y: float = 1.,
                vel_scale_rot: float = 1.,
-               max_acc: float = .5):
+               max_acc: float = 3.):
     """Initialize the gamepad controller.
     Args:
       vel_scale_x: maximum absolute x-velocity command.
@@ -144,7 +144,7 @@ class Gamepad:
   @property
   def speed_command(self):
     """Computes speed command from user input."""
-    delta_time = np.maximum(time.time() - self.last_timestamp, 1)
+    delta_time = np.minimum(time.time() - self.last_timestamp, 1)
     max_delta_speed = self._max_acc * delta_time
     self.vx = np.clip(self.vx_raw, self.vx - max_delta_speed,
                       self.vx + max_delta_speed)

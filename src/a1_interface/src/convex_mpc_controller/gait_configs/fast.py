@@ -10,7 +10,7 @@ def get_config():
   config.max_side_speed = 1.2
   config.max_rot_speed = 1.2
 
-  config.gait_parameters = [3.5, np.pi, np.pi, 0., 0.55]
+  config.gait_parameters = [3.5, np.pi, np.pi, 0., 0.5]
 
   # MPC-related settings
   config.mpc_foot_friction = 0.45
@@ -21,6 +21,6 @@ def get_config():
 
   config.desired_body_height = 0.26
   # Swing foot settings
-  config.foot_clearance_max = 0.12
+  config.foot_clearance_max = 0.1
   config.foot_clearance_land = 0.01
   return config
