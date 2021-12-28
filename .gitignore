@@ -19,6 +19,7 @@ __pycache__/
 logs/
 data/
 out_rgb/
+out_rgb_rainy/
 out_predID/
 runs/
 weights/
