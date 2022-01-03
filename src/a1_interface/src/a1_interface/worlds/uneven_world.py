@@ -4,19 +4,21 @@ import numpy as np
 
 class UnevenWorld:
   """Builds a simple world with a plane only."""
-  def __init__(self, pybullet_client):
+  def __init__(self, pybullet_client, random_seed=0):
     self._pybullet_client = pybullet_client
+    np.random.seed(random_seed)
 
   def build_world(self):
     """Builds world with uneven terrains."""
     p = self._pybullet_client
-    height_perturbation_range = 0.13
+    height_perturbation_range = 0.08
     num_heightfield_rows = 512
     num_heightfield_columns = 512
     heightfield_data = [0] * num_heightfield_rows * num_heightfield_columns
     for j in range(int(num_heightfield_columns / 2)):
       for i in range(int(num_heightfield_rows / 2)):
-        height = np.random.uniform(0, height_perturbation_range)
+        # height = np.random.uniform(0, height_perturbation_range)
+        height = height_perturbation_range if (i + j) % 2 == 0 else 0
         heightfield_data[2 * i + 2 * j * num_heightfield_rows] = height
         heightfield_data[2 * i + 1 + 2 * j * num_heightfield_rows] = height
         heightfield_data[2 * i + (2 * j + 1) * num_heightfield_rows] = height

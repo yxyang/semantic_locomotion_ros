@@ -5,7 +5,7 @@ class StairWorld:
   """Builds a simple world with a plane only."""
   def __init__(self,
                pybullet_client,
-               num_steps: int = 10,
+               num_steps: int = 30,
                stair_height: float = 0.08,
                stair_length: float = 0.25,
                first_step_at: float = 1.):

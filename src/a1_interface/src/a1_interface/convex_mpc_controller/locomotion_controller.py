@@ -24,7 +24,7 @@ from a1_interface.robots import a1
 from a1_interface.robots import a1_robot
 from a1_interface.robots.motors import MotorCommand
 from a1_interface.robots.motors import MotorControlMode
-from a1_interface.worlds import abstract_world, soft_world
+from a1_interface.worlds import abstract_world, plane_world
 
 
 def get_sim_conf():
@@ -51,7 +51,8 @@ class LocomotionController:
       use_real_robot: bool = False,
       show_gui: bool = False,
       logdir: str = 'logs/',
-      world_class: abstract_world.AbstractWorld = soft_world.SoftWorld):
+      world_class: abstract_world.AbstractWorld = plane_world.PlaneWorld,
+      start_running_immediately: bool = True):
     """Initializes the class.
 
     Args:
@@ -87,8 +88,9 @@ class LocomotionController:
     self._gait = None
     self._desired_gait = gait_type.SLOW
     self._handle_gait_switch()
-    self.run_thread = threading.Thread(target=self.run)
-    self.run_thread.start()
+    if start_running_immediately:
+      self.run_thread = threading.Thread(target=self.run)
+      self.run_thread.start()
 
   def _setup_robot_and_controllers(self):
     """Sets up simulated / real robot and corresponding MPC controllers."""
@@ -351,6 +353,14 @@ class LocomotionController:
             cameraPitch=-30,
             cameraTargetPosition=self._robot.base_position,
         )
+
+  def __del__(self):
+    self.close()
+
+  def close(self):
+    if hasattr(self, 'pybullet_client'):
+      self.pybullet_client.disconnect()
+      del self.pybullet_client
 
   def set_controller_mode(self, command):
     if not self.is_safe:

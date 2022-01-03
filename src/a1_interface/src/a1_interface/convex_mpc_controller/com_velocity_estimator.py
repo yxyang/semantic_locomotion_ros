@@ -52,7 +52,9 @@ class COMVelocityEstimator:
     https://ieeexplore.ieee.org/document/7354099
     """
     contact_foot_positions = np.array(contact_foot_positions)
-    normal_vec = np.linalg.lstsq(contact_foot_positions, np.ones(4))[0]
+    normal_vec = np.linalg.lstsq(contact_foot_positions,
+                                 np.ones(4),
+                                 rcond=None)[0]
     normal_vec /= np.linalg.norm(normal_vec)
     if normal_vec[2] < 0:
       normal_vec = -normal_vec

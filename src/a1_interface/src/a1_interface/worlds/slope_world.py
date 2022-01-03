@@ -8,7 +8,7 @@ class SlopeWorld:
                slope_center_x=1.5,
                slope_center_z=0.5,
                slope_angle=-0.4,
-               slope_length=5,
+               slope_length=20,
                slope_width=2):
     self._pybullet_client = pybullet_client
     self._slope_center_x = slope_center_x
