@@ -11,6 +11,44 @@ from a1_interface.robots.motors import MotorGroup
 from a1_interface.robots.motors import MotorModel
 from a1_interface.robots.robot import Robot
 
+_PYBULLET_DEFAULT_PROJECTION_MATRIX = (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                                       0.0, 0.0, -1.0000200271606445, -1.0,
+                                       0.0, 0.0, -0.02000020071864128, 0.0)
+_DEFAULT_TARGET_DISTANCE = 10
+
+
+def create_camera_image(pybullet_client,
+                        camera_position,
+                        camera_orientation,
+                        resolution,
+                        projection_mat,
+                        egl_render=False):
+  """Returns synthetic camera image from pybullet."""
+  orientation_mat = pybullet_client.getMatrixFromQuaternion(camera_orientation)
+
+  # The first column in the orientation matrix.
+  forward_vec = orientation_mat[::3]
+  target_distance = _DEFAULT_TARGET_DISTANCE
+  camera_target = [
+      camera_position[0] + forward_vec[0] * target_distance,
+      camera_position[1] + forward_vec[1] * target_distance,
+      camera_position[2] + forward_vec[2] * target_distance
+  ]
+
+  # The third column in the orientation matrix. We assume camera up vector is
+  # always [0, 0, 1] in its local frame.
+  up_vec = orientation_mat[2::3]
+
+  view_mat = pybullet_client.computeViewMatrix(camera_position, camera_target,
+                                               up_vec)
+  renderer = (pybullet_client.ER_BULLET_HARDWARE_OPENGL
+              if egl_render else pybullet_client.ER_TINY_RENDERER)
+  return pybullet_client.getCameraImage(resolution[0],
+                                        resolution[1],
+                                        viewMatrix=view_mat,
+                                        projectionMatrix=projection_mat,
+                                        renderer=renderer)
+
 
 class A1(Robot):
   """A1 Robot."""
@@ -247,3 +285,25 @@ class A1(Robot):
   @property
   def foot_forces(self):
     return np.zeros(4)
+
+  def get_camera_image(self,
+                       resolution=(640, 360),
+                       egl_render=False,
+                       camera_position=(0.22, 0, 0),
+                       camera_orientation_rpy=(0., 0.3, 0.)):
+    """Returns synthetic on-robot camera image."""
+    p = self.pybullet_client
+    camera_pos_relative = camera_position
+    camera_orientation_relative = p.getQuaternionFromEuler(
+        camera_orientation_rpy)
+    transform = p.multiplyTransforms(self.base_position,
+                                     self.base_orientation_quat,
+                                     camera_pos_relative,
+                                     camera_orientation_relative)
+    return create_camera_image(
+        p,
+        camera_position=transform[0],
+        camera_orientation=transform[1],
+        resolution=resolution,
+        projection_mat=_PYBULLET_DEFAULT_PROJECTION_MATRIX,
+        egl_render=egl_render)[2]

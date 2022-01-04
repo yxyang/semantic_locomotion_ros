@@ -8,6 +8,6 @@ class SlipperyWorld:
 
   def build_world(self):
     """Builds world with a simple plane and custom friction."""
-    ground_id = self._pybullet_client.loadURDF('plane.urdf')
+    ground_id = self._pybullet_client.loadURDF('plane_green.urdf')
     self._pybullet_client.changeDynamics(ground_id, -1, lateralFriction=.2)
     return ground_id
