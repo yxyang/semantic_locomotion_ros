@@ -22,13 +22,13 @@ class GPUCB:
     self.gp = GaussianProcessRegressor(kernel=Matern(nu=2.5),
                                        n_restarts_optimizer=25,
                                        normalize_y=True)
-    self.action_history = []
-    self.reward_history = []
+    self.action_history = np.zeros((0, self.action_space.high.shape[0]))
+    self.reward_history = np.zeros((0,))
     self.reset()
 
   def get_suggestion(self) -> Sequence[float]:
     """Gets action suggestion by maximizing acquisition function."""
-    if not self.action_history:
+    if len(self.action_history) == 0:
       return self.action_space.sample()
     sampled_actions = np.random.uniform(
         self.action_space.low,
@@ -41,15 +41,17 @@ class GPUCB:
 
   def receive_observation(self, action: Sequence[float],
                           reward: float) -> None:
-    self.action_history.append(action)
-    self.reward_history.append(reward)
+    self.action_history = np.concatenate((self.action_history, [action]),
+                                         axis=0)
+    self.reward_history = np.concatenate((self.reward_history, [reward]),
+                                         axis=0)
     with warnings.catch_warnings():
       warnings.simplefilter("ignore")
       self.gp.fit(self.action_history, self.reward_history)
 
   def reset(self) -> None:
-    self.action_history = []
-    self.reward_history = []
+    self.action_history = np.zeros((0, self.action_space.high.shape[0]))
+    self.reward_history = np.zeros((0,))
 
   def save(self, logdir: str) -> None:
     if not os.path.exists(logdir):
@@ -62,9 +64,12 @@ class GPUCB:
                reward_history=self.reward_history)
     rospy.loginfo("Saved checkpoint to: {}.".format(filename))
 
-  def load(self, logdir: str) -> None:
+  def restore(self, logdir: str) -> None:
     filename = os.path.join(logdir, 'checkpoint.npz')
-    ckpt = dict(np.load(open(filename, 'wb')))
+    ckpt = dict(np.load(open(filename, 'rb')))
     self.action_history = ckpt['action_history']
     self.reward_history = ckpt['reward_history']
+    with warnings.catch_warnings():
+      warnings.simplefilter("ignore")
+      self.gp.fit(self.action_history, self.reward_history)
     rospy.loginfo("Restored from: {}".format(filename))
