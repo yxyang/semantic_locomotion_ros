@@ -1,6 +1,6 @@
 """Creates a fixed environment for gait optimization."""
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -34,7 +34,7 @@ class FixedEnv:
   """An environment with fixed terrain properties."""
   def __init__(self,
                world_class: abstract_world.AbstractWorld,
-               gait_config: dict = None,
+               gait_config: Optional[dict] = None,
                show_gui: bool = False,
                use_real_robot: bool = False,
                episode_length: float = 2):

@@ -162,11 +162,11 @@ class LocomotionController:
           friction_coeffs=np.ones(4) * mpc_friction_coef)
 
   @property
-  def swing_leg_controller(self):
+  def swing_controller(self):
     return self._swing_controller
 
   @property
-  def stance_leg_controller(self):
+  def stance_controller(self):
     return self._stance_controller
 
   @property
