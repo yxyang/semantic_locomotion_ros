@@ -17,15 +17,15 @@ class GPUCB:
   def __init__(
       self,
       action_space: spaces.Box,
-      kappa: float = 1.4,  #.7,
+      kappa: float = 1.,  #.7,
       num_samples: int = 10000):
     self.action_space = action_space
     self._kappa = kappa
     self._num_samples = num_samples
     self.scaler = StandardScaler()
     self.gp = GaussianProcessRegressor(
-        kernel=Matern(nu=2.5, length_scale_bounds=(0.1, 1e2)) +
-        WhiteKernel(noise_level=0.005, noise_level_bounds=(1e-5, 0.01)),
+        kernel=Matern(nu=2.5, length_scale_bounds=(0.01, 1e5)) +
+        WhiteKernel(noise_level_bounds=(0.1, 0.5)),
         n_restarts_optimizer=25,
         normalize_y=True)
     self.pipeline = Pipeline([('scaler', self.scaler), ('gp', self.gp)])
