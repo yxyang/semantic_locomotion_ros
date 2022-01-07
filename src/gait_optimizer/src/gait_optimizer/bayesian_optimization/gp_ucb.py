@@ -7,23 +7,30 @@ from gym import spaces
 import numpy as np
 import rospy
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import Matern
+from sklearn.gaussian_process.kernels import Matern, WhiteKernel
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 
 class GPUCB:
   """The GP-UCB algorithm for continuous bandits."""
-  def __init__(self,
-               action_space: spaces.Box,
-               kappa: float = .7,
-               num_samples: int = 10000):
+  def __init__(
+      self,
+      action_space: spaces.Box,
+      kappa: float = 1,  #.7,
+      num_samples: int = 10000):
     self.action_space = action_space
     self._kappa = kappa
     self._num_samples = num_samples
-    self.gp = GaussianProcessRegressor(kernel=Matern(nu=2.5),
-                                       n_restarts_optimizer=25,
-                                       normalize_y=True)
+    self.scaler = StandardScaler()
+    self.gp = GaussianProcessRegressor(
+        kernel=Matern(nu=2.5, length_scale_bounds=(0.1, 1e2)) + WhiteKernel(),
+        n_restarts_optimizer=25,
+        normalize_y=True)
+    self.pipeline = Pipeline([('scaler', self.scaler), ('gp', self.gp)])
+
     self.action_history = np.zeros((0, self.action_space.high.shape[0]))
-    self.reward_history = np.zeros((0,))
+    self.reward_history = np.zeros([0])
     self.reset()
 
   def get_suggestion(self) -> Sequence[float]:
@@ -34,7 +41,8 @@ class GPUCB:
         self.action_space.low,
         self.action_space.high,
         size=[self._num_samples, self.action_space.low.shape[0]])
-    pred_mean, pred_std = self.gp.predict(sampled_actions, return_std=True)
+    pred_mean, pred_std = self.pipeline.predict(sampled_actions,
+                                                return_std=True)
     acquisition_function_values = pred_mean + self._kappa * pred_std
     best_action_index = np.argmax(acquisition_function_values)
     return sampled_actions[best_action_index]
@@ -47,11 +55,11 @@ class GPUCB:
                                          axis=0)
     with warnings.catch_warnings():
       warnings.simplefilter("ignore")
-      self.gp.fit(self.action_history, self.reward_history)
+      self.pipeline.fit(self.action_history, self.reward_history)
 
   def reset(self) -> None:
     self.action_history = np.zeros((0, self.action_space.high.shape[0]))
-    self.reward_history = np.zeros((0,))
+    self.reward_history = np.zeros([0])
 
   def save(self, logdir: str) -> None:
     if not os.path.exists(logdir):
@@ -71,5 +79,5 @@ class GPUCB:
     self.reward_history = ckpt['reward_history']
     with warnings.catch_warnings():
       warnings.simplefilter("ignore")
-      self.gp.fit(self.action_history, self.reward_history)
+      self.pipeline.fit(self.action_history, self.reward_history)
     rospy.loginfo("Restored from: {}".format(filename))

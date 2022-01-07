@@ -140,6 +140,8 @@ class A1Robot(a1.A1):
 
     self._last_reset_time = time.time()
     self._state_estimator.reset()
+    self._foot_contact_history[:] = self.foot_positions_in_base_frame.copy()
+    self._foot_contact_history[:, 2] = -self.mpc_body_height
 
   @property
   def sim_conf(self):
