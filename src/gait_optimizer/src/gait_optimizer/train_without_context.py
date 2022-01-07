@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Optimize gaits using GP in a single environment."""
+import os
+
 from absl import app
 from absl import flags
 
@@ -54,8 +56,11 @@ def main(_):
     print("Iter: {}, action: {}, reward: {}".format(i, action, reward))
     if FLAGS.logdir:
       agent.save(FLAGS.logdir)
+      env.save_latest_trajectory(
+          os.path.join(FLAGS.logdir, "traj_{}.pkl".format(i)))
 
   env.close()
+
 
 if __name__ == '__main__':
   app.run(main)

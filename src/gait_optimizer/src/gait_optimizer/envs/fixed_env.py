@@ -1,5 +1,6 @@
 """Creates a fixed environment for gait optimization."""
 
+import pickle
 import time
 from typing import Optional, Sequence
 
@@ -39,6 +40,13 @@ def generate_slowdown_speed_profile(curr_speed, time_to_stop=1):
 
   return get_desired_speed
 
+def clip_swing_freq(parameters, max_swing_distance=0.35):
+  clipped_parameters = parameters.copy()
+  max_speed = clipped_parameters[3]
+  min_swing_freq = max_speed / (2 * max_swing_distance)
+  clipped_parameters[0] = np.maximum(min_swing_freq, clipped_parameters[0])
+  return clipped_parameters
+
 
 class FixedEnv:
   """An environment with fixed terrain properties."""
@@ -64,6 +72,7 @@ class FixedEnv:
     self._show_gui = show_gui
     self._use_real_robot = use_real_robot
     self._settledown_time = settledown_time  # For real robot use only.
+    self._latest_trajectory = None
 
     self._controller.gait_generator.gait_params = gait_config["gait_params"]
     self._controller.swing_controller.foot_height = gait_config[
@@ -82,6 +91,8 @@ class FixedEnv:
 
   def eval_parameters(self, parameters: Sequence[float]) -> float:
     """Evaluates the parameter and returns the total reward."""
+    parameters = clip_swing_freq(parameters)
+
     if self._use_real_robot:
       print("Press left joystick on the gamepad to start the next episode...")
       self._gamepad.hold_until_lj_is_pressed()
@@ -146,7 +157,8 @@ class FixedEnv:
     energy_score = metrics.energy_metric(states)
     stability_score = metrics.stability_metric(states)
     speed_score = metrics.speed_metric(states)
-    return safety_score / 500. - stability_score * 10 - \
+    self._latest_trajectory = states
+    return safety_score - stability_score * 10 - \
       energy_score * 1e-4 + speed_score * 3
 
   def _slowdown(self, current_speed):
@@ -214,3 +226,11 @@ class FixedEnv:
     self._controller.close()
     if self._use_real_robot:
       self._gamepad.stop()
+
+  @property
+  def latest_trajectory(self):
+    return self._latest_trajectory
+
+  def save_latest_trajectory(self, logdir):
+    with open(logdir, 'wb') as f:
+      pickle.dump(self._latest_trajectory, f)
