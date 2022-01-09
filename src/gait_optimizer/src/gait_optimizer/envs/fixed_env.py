@@ -41,7 +41,7 @@ def generate_slowdown_speed_profile(curr_speed, time_to_stop=1):
   return get_desired_speed
 
 def clip_swing_freq(parameters, max_swing_distance=0.35):
-  clipped_parameters = parameters.copy()
+  clipped_parameters = np.array(parameters).copy()
   max_speed = clipped_parameters[3]
   min_swing_freq = max_speed / (2 * max_swing_distance)
   clipped_parameters[0] = np.maximum(min_swing_freq, clipped_parameters[0])
@@ -159,7 +159,7 @@ class FixedEnv:
     speed_score = metrics.speed_metric(states)
     self._latest_trajectory = states
     return safety_score - stability_score * 10 - \
-      energy_score * 1e-4 + speed_score * 3
+      energy_score * 1e-3 + speed_score * 3
 
   def _slowdown(self, current_speed):
     """Slow down the robot using a default robust gait."""
