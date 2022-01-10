@@ -11,14 +11,14 @@ class UnevenWorld:
   def build_world(self):
     """Builds world with uneven terrains."""
     p = self._pybullet_client
-    height_perturbation_range = 0.08
+    height_perturbation_range = 0.14
     num_heightfield_rows = 512
     num_heightfield_columns = 512
     heightfield_data = [0] * num_heightfield_rows * num_heightfield_columns
     for j in range(int(num_heightfield_columns / 2)):
       for i in range(int(num_heightfield_rows / 2)):
-        # height = np.random.uniform(0, height_perturbation_range)
-        height = height_perturbation_range if (i + j) % 2 == 0 else 0
+        height = np.random.uniform(0, height_perturbation_range)
+        # height = height_perturbation_range if (i + j) % 2 == 0 else 0
         heightfield_data[2 * i + 2 * j * num_heightfield_rows] = height
         heightfield_data[2 * i + 1 + 2 * j * num_heightfield_rows] = height
         heightfield_data[2 * i + (2 * j + 1) * num_heightfield_rows] = height

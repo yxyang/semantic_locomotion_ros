@@ -33,3 +33,13 @@ def speed_metric(states):
   total_distance = np.sum(base_velocities[:-1] * np.diff(timestamps))
   total_time = np.maximum(timestamps[-1] - timestamps[0], 0.01)
   return total_distance / total_time
+
+
+def foot_velocity_metric(states):
+  vel_stds = []
+  for frame in states:
+    if np.sum(frame['foot_contacts']):
+      contact_vels = frame['foot_velocities'][np.nonzero(
+          frame['foot_contacts'])[0]]
+      vel_stds.append(np.std(contact_vels, axis=0))
+  return np.mean(vel_stds)

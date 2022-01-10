@@ -320,6 +320,16 @@ class Robot:
     return motor_torques_dict
 
   @property
+  def foot_velocities(self):
+    motor_velocities = self.motor_velocities
+    foot_velocities = []
+    for leg_id in range(4):
+      jv = self.compute_foot_jacobian(leg_id)
+      foot_velocities.append(
+          jv.dot(motor_velocities[leg_id * 3:leg_id * 3 + 3]))
+    return np.array(foot_velocities)
+
+  @property
   def control_timestep(self):
     return self._sim_conf.timestep * self._sim_conf.action_repeat
 

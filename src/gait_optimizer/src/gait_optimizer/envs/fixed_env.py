@@ -40,6 +40,7 @@ def generate_slowdown_speed_profile(curr_speed, time_to_stop=1):
 
   return get_desired_speed
 
+
 def clip_swing_freq(parameters, max_swing_distance=0.35):
   clipped_parameters = np.array(parameters).copy()
   max_speed = clipped_parameters[3]
@@ -138,7 +139,8 @@ class FixedEnv:
                motor_angles=robot.motor_angles,
                motor_velocities=robot.motor_velocities,
                motor_torques=robot.motor_torques,
-               foot_contacts=robot.foot_contacts))
+               foot_contacts=robot.foot_contacts,
+               foot_velocities=robot.foot_velocities))
       if self._show_gui:
         self._controller.pybullet_client.resetDebugVisualizerCamera(
             cameraDistance=1.0,
@@ -155,10 +157,11 @@ class FixedEnv:
 
     safety_score = metrics.safety_metric(states)
     energy_score = metrics.energy_metric(states)
-    stability_score = metrics.stability_metric(states)
+    # stability_score = metrics.stability_metric(states)
     speed_score = metrics.speed_metric(states)
+    foot_velocity_score = metrics.foot_velocity_metric(states)
     self._latest_trajectory = states
-    return safety_score - stability_score * 10 - \
+    return safety_score - foot_velocity_score * 10 - \
       energy_score * 1e-3 + speed_score * 3
 
   def _slowdown(self, current_speed):
