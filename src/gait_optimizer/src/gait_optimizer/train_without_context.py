@@ -50,7 +50,8 @@ def main(_):
                              use_real_robot=False)
 
   for i in range(FLAGS.num_iter):
-    action = agent.get_suggestion()
+    # action = agent.get_suggestion()
+    action = np.array([3.5, 0.1, 0.26, 0.5])
     reward = env.eval_parameters(action)
     agent.receive_observation(action, reward)
     print("Iter: {}, action: {}, reward: {}".format(i, action, reward))

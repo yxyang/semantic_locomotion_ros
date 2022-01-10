@@ -41,7 +41,7 @@ def generate_slowdown_speed_profile(curr_speed, time_to_stop=1):
   return get_desired_speed
 
 
-def clip_swing_freq(parameters, max_swing_distance=0.35):
+def clip_swing_freq(parameters, max_swing_distance=0.3):
   clipped_parameters = np.array(parameters).copy()
   max_speed = clipped_parameters[3]
   min_swing_freq = max_speed / (2 * max_swing_distance)
@@ -152,7 +152,7 @@ class FixedEnv:
         break
 
     if self._use_real_robot:
-      self._slowdown(desired_speed)
+      self._slowdown(robot.base_velocity)
       self._reset_with_gamepad()
 
     safety_score = metrics.safety_metric(states)
@@ -161,14 +161,14 @@ class FixedEnv:
     speed_score = metrics.speed_metric(states)
     foot_velocity_score = metrics.foot_velocity_metric(states)
     self._latest_trajectory = states
-    return safety_score - foot_velocity_score * 10 - \
+    return safety_score - foot_velocity_score * 30 - \
       energy_score * 1e-3 + speed_score * 3
 
   def _slowdown(self, current_speed):
     """Slow down the robot using a default robust gait."""
     if not self._controller.is_safe:
       rospy.loginfo("Robot unsafe, skipping slow-down...")
-    self._controller.gait_generator.gait_params = [3, np.pi, np.pi, 0, 0.5]
+    self._controller.gait_generator.gait_params = [3.5, np.pi, np.pi, 0, 0.5]
     self._controller.swing_controller.foot_height = 0.1
     self._controller.swing_controller.desired_body_height = 0.26
     self._controller.stance_controller.update_mpc_config(
