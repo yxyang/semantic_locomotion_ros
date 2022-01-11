@@ -162,7 +162,7 @@ class FixedEnv:
     foot_velocity_score = metrics.foot_velocity_metric(states)
     self._latest_trajectory = states
     return safety_score - foot_velocity_score * 30 - \
-      energy_score * 1e-3 + speed_score * 1
+      energy_score * 1e-3 + speed_score * 2.5
 
   def _slowdown(self, current_speed):
     """Slow down the robot using a default robust gait."""
