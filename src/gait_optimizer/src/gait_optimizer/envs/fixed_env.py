@@ -35,8 +35,9 @@ def generate_speed_profile(max_speed, acc=1):
 
 
 def generate_slowdown_speed_profile(curr_speed, time_to_stop=1):
+  start_speed = np.maximum(curr_speed, 0)
   def get_desired_speed(time_since_reset):
-    return np.maximum(curr_speed * (time_to_stop - time_since_reset), 0), 0, 0
+    return np.maximum(start_speed * (time_to_stop - time_since_reset), 0), 0, 0
 
   return get_desired_speed
 
@@ -162,7 +163,7 @@ class FixedEnv:
     foot_velocity_score = metrics.foot_velocity_metric(states)
     self._latest_trajectory = states
     return safety_score - foot_velocity_score * 30 - \
-      energy_score * 1e-3 + speed_score * 2.5
+      energy_score * 1e-3 + speed_score * 3
 
   def _slowdown(self, current_speed):
     """Slow down the robot using a default robust gait."""
