@@ -22,7 +22,7 @@ flags.DEFINE_enum('world_name', 'plane',
 flags.DEFINE_bool('show_gui', False, 'whether to show gui.')
 FLAGS = flags.FLAGS
 
-PARAM_LB = np.array([2., 0.08, 0.24, 0.1])
+PARAM_LB = np.array([1.5, 0.08, 0.24, 0.1])
 PARAM_UB = np.array([3.5, 0.18, 0.3, 2.0])
 WORLD_NAME_TO_WORLD_CLASS = {
     'plane': plane_world.PlaneWorld,
