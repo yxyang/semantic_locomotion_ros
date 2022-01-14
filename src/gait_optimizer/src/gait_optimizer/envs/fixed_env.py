@@ -57,7 +57,7 @@ class FixedEnv:
                gait_config: Optional[dict] = None,
                show_gui: bool = False,
                use_real_robot: bool = False,
-               episode_length: float = 2,
+               episode_length: float = 4,
                settledown_time: float = 2):
     if gait_config is None:
       gait_config = get_default_gait_config()
@@ -163,7 +163,7 @@ class FixedEnv:
     foot_velocity_score = metrics.foot_velocity_metric(states)
     self._latest_trajectory = states
     return safety_score - foot_velocity_score * 30 - \
-      energy_score * 1e-3 + speed_score * 3
+      energy_score * 1e-3 + speed_score * 2.5
 
   def _slowdown(self, current_speed):
     """Slow down the robot using a default robust gait."""
