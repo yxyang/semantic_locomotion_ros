@@ -17,7 +17,7 @@ class GPUCB:
   def __init__(
       self,
       action_space: spaces.Box,
-      kappa: float = 1.,  #.7,
+      kappa: float = 1.8,  #.7,
       num_samples: int = 10000,
       num_cem_iterations: int = 5,
       num_cem_elite_samples: int = 1000):

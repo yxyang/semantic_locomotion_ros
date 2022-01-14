@@ -1,12 +1,11 @@
 """Build a world with uneven terrains."""
 import numpy as np
 
-
 class UnevenWorld:
   """Builds a simple world with a plane only."""
-  def __init__(self, pybullet_client, random_seed=0):
+  def __init__(self, pybullet_client):
     self._pybullet_client = pybullet_client
-    np.random.seed(random_seed)
+    np.random.seed(0)
 
   def build_world(self):
     """Builds world with uneven terrains."""
