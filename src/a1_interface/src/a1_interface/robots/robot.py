@@ -198,6 +198,23 @@ class Robot:
     return contacts
 
   @property
+  def foot_forces(self):
+    """Returns the contact force of the robot's feet."""
+    all_contacts = self._pybullet_client.getContactPoints(bodyA=self.quadruped)
+
+    contact_forces = np.zeros(4)
+    for contact in all_contacts:
+      # Ignore self contacts
+      if contact[2] == self.quadruped:
+        continue
+      try:
+        toe_link_index = self._foot_link_ids.index(contact[3])
+        contact_forces[toe_link_index] = contact[9]
+      except ValueError:
+        continue
+    return contact_forces
+
+  @property
   def foot_velocities_world_frame(self):
     velocities = []
     for link_id in self._foot_link_ids:
@@ -367,8 +384,4 @@ class Robot:
 
   @property
   def mpc_body_inertia(self):
-    raise NotImplementedError()
-
-  @property
-  def foot_forces(self):
     raise NotImplementedError()

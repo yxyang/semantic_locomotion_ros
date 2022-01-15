@@ -282,10 +282,6 @@ class A1(Robot):
   def num_motors(self):
     return 12
 
-  @property
-  def foot_forces(self):
-    return np.zeros(4)
-
   def get_camera_image(self,
                        resolution=(640, 360),
                        egl_render=False,

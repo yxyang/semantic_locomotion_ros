@@ -67,7 +67,8 @@ class LocomotionController:
     self._use_real_robot = use_real_robot
     self._show_gui = show_gui
     self._world_class = world_class
-    self._setup_robot_and_controllers()
+    self.setup_pybullet_client()
+    self.setup_robot_and_controllers()
     self.reset_robot()
     self.reset_controllers()
     self._reset_time = self._clock()
@@ -92,20 +93,22 @@ class LocomotionController:
       self.run_thread = threading.Thread(target=self.run)
       self.run_thread.start()
 
-  def _setup_robot_and_controllers(self):
-    """Sets up simulated / real robot and corresponding MPC controllers."""
-    # Construct robot
+  def setup_pybullet_client(self):
     if self._show_gui and not self._use_real_robot:
       p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
     else:
       p = bullet_client.BulletClient(connection_mode=pybullet.DIRECT)
+    self.pybullet_client = p
 
+  def setup_robot_and_controllers(self):
+    """Sets up simulated / real robot and corresponding MPC controllers."""
+    # Construct robot
+    p = self.pybullet_client
     p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 0)
     rp = rospkg.RosPack()
     package_path = rp.get_path('a1_interface')
     p.setAdditionalSearchPath(os.path.join(package_path, 'data'))
 
-    self.pybullet_client = p
     p.setPhysicsEngineParameter(numSolverIterations=30)
     p.setTimeStep(0.002)
     p.setGravity(0, 0, -9.8)
@@ -361,6 +364,7 @@ class LocomotionController:
     if hasattr(self, 'pybullet_client'):
       self.pybullet_client.disconnect()
       del self.pybullet_client
+      del self._world_builder
 
   def set_controller_mode(self, command):
     if not self.is_safe:

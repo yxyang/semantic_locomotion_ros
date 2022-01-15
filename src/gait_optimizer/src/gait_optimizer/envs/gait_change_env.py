@@ -36,6 +36,7 @@ def generate_speed_profile(max_speed, acc=1):
 
 def generate_slowdown_speed_profile(curr_speed, time_to_stop=1):
   start_speed = np.maximum(curr_speed, 0)
+
   def get_desired_speed(time_since_reset):
     return np.maximum(start_speed * (time_to_stop - time_since_reset), 0), 0, 0
 
@@ -50,7 +51,7 @@ def clip_swing_freq(parameters, max_swing_distance=0.3):
   return clipped_parameters
 
 
-class FixedEnv:
+class GaitChangeEnv:
   """An environment with fixed terrain properties."""
   def __init__(self,
                world_class: abstract_world.AbstractWorld,
@@ -61,6 +62,15 @@ class FixedEnv:
                settledown_time: float = 2):
     if gait_config is None:
       gait_config = get_default_gait_config()
+
+    self._gait_config = gait_config
+    self._episode_length = episode_length
+    self._show_gui = show_gui
+    self._use_real_robot = use_real_robot
+    self._settledown_time = settledown_time  # For real robot use only.
+    self._latest_trajectory = None
+    self._world_class = world_class
+
     self._controller = locomotion_controller.LocomotionController(
         use_real_robot=use_real_robot,
         show_gui=show_gui,
@@ -69,13 +79,6 @@ class FixedEnv:
     self._controller.set_controller_mode(
         controller_mode(mode=controller_mode.WALK))
     self._controller._handle_mode_switch()
-    self._gait_config = gait_config
-    self._episode_length = episode_length
-    self._show_gui = show_gui
-    self._use_real_robot = use_real_robot
-    self._settledown_time = settledown_time  # For real robot use only.
-    self._latest_trajectory = None
-
     self._controller.gait_generator.gait_params = gait_config["gait_params"]
     self._controller.swing_controller.foot_height = gait_config[
         "foot_clearance_max"]
@@ -90,6 +93,15 @@ class FixedEnv:
 
     if self._use_real_robot:
       self._gamepad = gamepad_reader.Gamepad()
+
+  def reset(self):
+    if not self._use_real_robot:
+      self._controller.pybullet_client.resetSimulation()
+      self._controller.setup_robot_and_controllers()
+
+  def get_context(self) -> np.ndarray:
+    camera_image = self._controller.robot.get_camera_image()
+    return np.mean(camera_image, axis=(0, 1))
 
   def eval_parameters(self, parameters: Sequence[float]) -> float:
     """Evaluates the parameter and returns the total reward."""
@@ -137,10 +149,12 @@ class FixedEnv:
                com_velocity_body_frame,
                base_orientation_rpy=robot.base_orientation_rpy,
                base_rpy_rate=robot.base_rpy_rate,
+               desired_speed=desired_speed,
                motor_angles=robot.motor_angles,
                motor_velocities=robot.motor_velocities,
                motor_torques=robot.motor_torques,
                foot_contacts=robot.foot_contacts,
+               foot_forces=robot.foot_forces,
                foot_velocities=robot.foot_velocities))
       if self._show_gui:
         self._controller.pybullet_client.resetDebugVisualizerCamera(
@@ -158,12 +172,12 @@ class FixedEnv:
 
     safety_score = metrics.safety_metric(states)
     energy_score = metrics.energy_metric(states)
-    # stability_score = metrics.stability_metric(states)
     speed_score = metrics.speed_metric(states)
     foot_velocity_score = metrics.foot_velocity_metric(states)
     self._latest_trajectory = states
+
     return safety_score - foot_velocity_score * 30 - \
-      energy_score * 1e-3 + speed_score * 2.5
+      energy_score * 1e-3 + speed_score * 3
 
   def _slowdown(self, current_speed):
     """Slow down the robot using a default robust gait."""

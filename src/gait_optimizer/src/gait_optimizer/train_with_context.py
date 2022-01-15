@@ -8,34 +8,26 @@ from absl import flags
 from gym import spaces
 import numpy as np
 
-from a1_interface.worlds import plane_world, uneven_world, soft_world, slippery_world, slope_world
-from gait_optimizer.bayesian_optimization import gp_ucb
+from a1_interface.worlds import plane_world, random_world
+from gait_optimizer.bayesian_optimization import cgp_ucb
 from gait_optimizer.envs import gait_change_env
 
 flags.DEFINE_string('logdir', None, 'where to log experiments.')
 flags.DEFINE_integer('num_iter', 10, 'Number of iterations to run.')
 flags.DEFINE_string('restore_checkpoint', None,
                     'whether to restore previous checkpoint.')
-flags.DEFINE_enum('world_name', 'plane',
-                  ['plane', 'soft', 'uneven', 'slippery', 'slope', 'real'],
-                  'which world to run.')
+flags.DEFINE_enum('world_name', 'sim', ['sim', 'real'], 'which world to run.')
 flags.DEFINE_bool('show_gui', False, 'whether to show gui.')
 FLAGS = flags.FLAGS
 
 PARAM_LB = np.array([1.5, 0.08, 0.24, 0.1])
 PARAM_UB = np.array([3.5, 0.18, 0.3, 1.0])
-WORLD_NAME_TO_WORLD_CLASS = {
-    'plane': plane_world.PlaneWorld,
-    'soft': soft_world.SoftWorld,
-    'uneven': uneven_world.UnevenWorld,
-    'slippery': slippery_world.SlipperyWorld,
-    'slope': slope_world.SlopeWorld,
-}
+np.set_printoptions(suppress=True, precision=2)
 
 
 def main(_):
   action_space = spaces.Box(low=PARAM_LB, high=PARAM_UB)
-  agent = gp_ucb.GPUCB(action_space)
+  agent = cgp_ucb.CGPUCB(action_space, dim_context=4)
   if FLAGS.restore_checkpoint:
     agent.restore(FLAGS.restore_checkpoint)
 
@@ -44,16 +36,18 @@ def main(_):
                                         show_gui=False,
                                         use_real_robot=True)
   else:
-    world_class = WORLD_NAME_TO_WORLD_CLASS[FLAGS.world_name]
-    env = gait_change_env.GaitChangeEnv(world_class,
+    env = gait_change_env.GaitChangeEnv(random_world.RandomWorld,
                                         show_gui=FLAGS.show_gui,
                                         use_real_robot=False)
 
-  for i in range(FLAGS.num_iter):
-    action = agent.get_suggestion()
+  for i in range(agent.iter_count, agent.iter_count + FLAGS.num_iter):
+    env.reset()
+    context = env.get_context()
+    action = agent.get_suggestion(context)
     reward = env.eval_parameters(action)
-    print("Iter: {}, action: {}, reward: {}".format(i, action, reward))
-    agent.receive_observation(action, reward)
+    agent.receive_observation(context, action, reward)
+    print("Iter: {}, context: {}, action: {}, reward: {}".format(
+        i, context, action, reward))
     if FLAGS.logdir:
       agent.save(FLAGS.logdir)
       env.save_latest_trajectory(

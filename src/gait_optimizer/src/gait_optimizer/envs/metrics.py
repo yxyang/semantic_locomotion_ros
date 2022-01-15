@@ -42,4 +42,13 @@ def foot_velocity_metric(states):
       contact_vels = frame['foot_velocities'][np.nonzero(
           frame['foot_contacts'])[0]]
       vel_stds.append(np.std(contact_vels, axis=0))
-  return np.mean(vel_stds)
+  return np.nan_to_num(np.mean(vel_stds), 0)
+
+def foot_force_metric(states):
+  force_stds = []
+  for frame in states:
+    if np.sum(frame['foot_contacts']):
+      contact_forces = frame['foot_forces'][np.nonzero(
+          frame['foot_contacts'])[0]]
+      force_stds.append(np.std(contact_forces, axis=0))
+  return np.mean(force_stds)
