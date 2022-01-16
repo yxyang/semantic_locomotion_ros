@@ -39,7 +39,7 @@ class FixedRegionMapper:
                                  "RUGD_a1_sgd_momentum",
                                  "image_embeddings.npz")
     image_embeddings_ckpt = np.load(open(embedding_dir, 'rb'))
-    pca = sklearn.decomposition.PCA(n_components=3)
+    pca = sklearn.decomposition.PCA(n_components=4)
     pca.fit(image_embeddings_ckpt["image_embeddings"])
     return pca
 

@@ -12,6 +12,7 @@ from a1_interface.worlds import abstract_world
 from a1_interface.msg import controller_mode
 from gait_optimizer.envs import gamepad_reader
 from gait_optimizer.envs import metrics
+from perception.msg import image_embedding
 
 
 def get_default_gait_config():
@@ -58,6 +59,7 @@ class GaitChangeEnv:
                gait_config: Optional[dict] = None,
                show_gui: bool = False,
                use_real_robot: bool = False,
+               use_real_camera: bool = False,
                episode_length: float = 4,
                settledown_time: float = 2):
     if gait_config is None:
@@ -67,6 +69,7 @@ class GaitChangeEnv:
     self._episode_length = episode_length
     self._show_gui = show_gui
     self._use_real_robot = use_real_robot
+    self._use_real_camera = use_real_camera or use_real_robot
     self._settledown_time = settledown_time  # For real robot use only.
     self._latest_trajectory = None
     self._world_class = world_class
@@ -94,14 +97,26 @@ class GaitChangeEnv:
     if self._use_real_robot:
       self._gamepad = gamepad_reader.Gamepad()
 
+    if self._use_real_camera:
+      self._image_embedding = np.zeros(4)
+      rospy.Subscriber("/perception/image_embedding", image_embedding,
+                       self.set_image_embedding)
+      rospy.init_node("gait_change_env", anonymous=True)
+
+  def set_image_embedding(self, msg):
+    self._image_embedding = np.array(msg.embedding)
+
   def reset(self):
     if not self._use_real_robot:
       self._controller.pybullet_client.resetSimulation()
       self._controller.setup_robot_and_controllers()
 
   def get_context(self) -> np.ndarray:
-    camera_image = self._controller.robot.get_camera_image()
-    return np.mean(camera_image, axis=(0, 1))
+    if self._use_real_camera:
+      return self._image_embedding
+    else:
+      camera_image = self._controller.robot.get_camera_image()
+      return np.mean(camera_image, axis=(0, 1))
 
   def eval_parameters(self, parameters: Sequence[float]) -> float:
     """Evaluates the parameter and returns the total reward."""

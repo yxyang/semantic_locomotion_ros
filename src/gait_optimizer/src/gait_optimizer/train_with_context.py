@@ -18,6 +18,8 @@ flags.DEFINE_string('restore_checkpoint', None,
                     'whether to restore previous checkpoint.')
 flags.DEFINE_enum('world_name', 'sim', ['sim', 'real'], 'which world to run.')
 flags.DEFINE_bool('show_gui', False, 'whether to show gui.')
+flags.DEFINE_bool('use_real_camera', False,
+                  'whether to use physical camera or synthetic camera.')
 FLAGS = flags.FLAGS
 
 PARAM_LB = np.array([1.5, 0.08, 0.24, 0.1])
@@ -34,11 +36,13 @@ def main(_):
   if FLAGS.world_name == 'real':
     env = gait_change_env.GaitChangeEnv(plane_world.PlaneWorld,
                                         show_gui=False,
-                                        use_real_robot=True)
+                                        use_real_robot=True,
+                                        use_real_camera=True)
   else:
     env = gait_change_env.GaitChangeEnv(random_world.RandomWorld,
                                         show_gui=FLAGS.show_gui,
-                                        use_real_robot=False)
+                                        use_real_robot=False,
+                                        use_real_camera=FLAGS.use_real_camera)
 
   for i in range(agent.iter_count, agent.iter_count + FLAGS.num_iter):
     env.reset()
