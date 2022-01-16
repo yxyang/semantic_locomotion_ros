@@ -23,8 +23,7 @@ def energy_metric(states):
 
 def stability_metric(states):
   base_rpy_rate = np.array([frame["base_rpy_rate"] for frame in states])
-  return np.mean(np.abs(base_rpy_rate))
-
+  return np.mean(np.square(base_rpy_rate))
 
 def speed_metric(states):
   timestamps = np.array([frame['timestamp'] for frame in states])
@@ -38,11 +37,14 @@ def speed_metric(states):
 def foot_velocity_metric(states):
   vel_stds = []
   for frame in states:
-    if np.sum(frame['foot_contacts']):
-      contact_vels = frame['foot_velocities'][np.nonzero(
-          frame['foot_contacts'])[0]]
+    foot_phase = np.fmod(frame['gait_generator_phase'] + 2 * np.pi, 2 * np.pi)
+    foot_contact = np.logical_and(foot_phase > 1, foot_phase < np.pi - 1)
+    if np.sum(foot_contact):
+      contact_vels = frame['foot_velocities'][np.nonzero(foot_contact)[0]]
       vel_stds.append(np.std(contact_vels, axis=0))
+
   return np.nan_to_num(np.mean(vel_stds), 0)
+
 
 def foot_force_metric(states):
   force_stds = []
