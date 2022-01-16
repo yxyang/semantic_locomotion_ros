@@ -6,8 +6,9 @@ import cv2
 import numpy as np
 import rospkg
 import rospy
-import torch
 from sensor_msgs.msg import CompressedImage
+import sklearn.decomposition
+import torch
 
 from perception.configs import rugd_a1
 from perception.models import get_model
@@ -28,16 +29,24 @@ class FixedRegionMapper:
     self._image_width = 640
     self._image_array = None
     self._segmentation_model = self._load_segmentation_model(config)
+    self._pca = self._load_pca()
     self._last_segmentation_map = None
-    self._processed_image_publisher = rospy.Publisher(
-        '/perception/processed_camera_image/compressed',
-        CompressedImage,
-        queue_size=1)
+
+  def _load_pca(self) -> sklearn.decomposition.PCA:
+    rospack = rospkg.RosPack()
+    package_dir = os.path.join(rospack.get_path("perception"), "src")
+    embedding_dir = os.path.join(package_dir, "perception", "saved_models",
+                                 "RUGD_a1_sgd_momentum",
+                                 "image_embeddings.npz")
+    image_embeddings_ckpt = np.load(open(embedding_dir, 'rb'))
+    pca = sklearn.decomposition.PCA(n_components=3)
+    pca.fit(image_embeddings_ckpt["image_embeddings"])
+    return pca
 
   def _load_segmentation_model(self, config) -> torch.nn.Module:
     """Loads the trained segmentation model."""
     rospack = rospkg.RosPack()
-    package_path = os.path.join(rospack.get_path('perception'), "src")
+    package_dir = os.path.join(rospack.get_path("perception"), "src")
 
     n_classes = 4
     if torch.cuda.is_available():
@@ -46,7 +55,7 @@ class FixedRegionMapper:
       self._device = torch.device("cpu")
 
     model = get_model(config["model"], n_classes).to(self._device)
-    model_dir = os.path.join(package_path, "perception", "saved_models",
+    model_dir = os.path.join(package_dir, "perception", "saved_models",
                              "RUGD_a1_sgd_momentum",
                              "hardnet_rugd_a1_1500.pkl")
     state = convert_state_dict(torch.load(model_dir)["model_state"])
@@ -87,7 +96,6 @@ class FixedRegionMapper:
   def segmentation_mask(self):
     return self._get_segmentation_mask()
 
-
   def _compute_segmentation_map(self) -> np.ndarray:
     """Preprocesses image and queries model for segmentation result."""
     img = self._image_array.copy()
@@ -101,12 +109,6 @@ class FixedRegionMapper:
     img_float = np.clip(img_float * desired_brightness / brightness, 0, 1)
     img = img_float * 255
 
-    msg = CompressedImage()
-    msg.header.stamp = rospy.Time.now()
-    msg.format = "png"
-    msg.data = np.array(cv2.imencode(".png", img)[1]).tostring()
-    self._processed_image_publisher.publish(msg)
-
     # Get the right shape
     img = np.rollaxis(img, -1, 0)
     img = img[np.newaxis, ...]
@@ -116,6 +118,29 @@ class FixedRegionMapper:
     seg_map = seg_map[0]
     seg_map = np.argmax(seg_map, axis=0)
     return seg_map
+
+  def get_embedding(self) -> np.ndarray:
+    """Preprocesses image and queries model for segmentation result."""
+    img = self._image_array.copy()
+
+    # Normalize on brightness
+    img_float = img / 255.
+    brightness = np.mean(0.2126 * img_float[..., 0] +
+                         0.7152 * img_float[..., 1] +
+                         0.0722 * img_float[..., 2])
+    desired_brightness = 0.66
+    img_float = np.clip(img_float * desired_brightness / brightness, 0, 1)
+    img = img_float * 255
+
+    # Get the right shape
+    img = np.rollaxis(img, -1, 0)
+    img = img[np.newaxis, ...]
+    img = torch.tensor(img).to(self._device)
+    embedding = self._segmentation_model.get_embedding(img)
+    embedding = np.array(embedding.cpu().detach().numpy())
+    mask, _ = self._get_segmentation_mask()
+    embedding_full = np.sum(mask * embedding, axis=(2, 3)) / np.sum(mask)
+    return self._pca.transform(np.array(embedding_full))[0]
 
   def get_segmentation_result(self) -> Tuple[np.ndarray, float]:
     """Returns segmentation result (score and visualization)."""

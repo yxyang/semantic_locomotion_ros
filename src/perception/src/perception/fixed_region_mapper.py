@@ -8,6 +8,7 @@ from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float32
 
 from perception.fixed_region_mapper_lib import FixedRegionMapper
+from perception.msg import image_embedding
 
 
 def image_callback(image):
@@ -29,13 +30,19 @@ def main(argv):
       '/perception/segmentation_map/compressed', CompressedImage, queue_size=1)
   traversability_score_publisher = rospy.Publisher(
       '/perception/traversability_score', Float32, queue_size=1)
+  embedding_publisher = rospy.Publisher('/perception/image_embedding',
+                                        image_embedding,
+                                        queue_size=1)
+
   rospy.init_node("segmentation", anonymous=True)
   rate = rospy.Rate(6)
   while not rospy.is_shutdown():
     if mapper.image_array is not None:
       score, segmentation_map = mapper.get_segmentation_result()
+      embedding = mapper.get_embedding()
       segmentation_map_publisher.publish(segmentation_map)
       traversability_score_publisher.publish(score)
+      embedding_publisher.publish(image_embedding(embedding=embedding.tolist()))
       rospy.loginfo("Score: {}".format(score))
     rate.sleep()
 

@@ -7,8 +7,8 @@ import torch
 from PIL import Image
 from torch.utils import data
 
-from augmentations import Compose, RandomHorizontallyFlip, RandomRotate, Scale
-from utils import recursive_glob
+from perception.augmentations import Compose, RandomHorizontallyFlip, RandomRotate, Scale
+from perception.utils import recursive_glob
 
 
 class CityscapesLoader(data.Dataset):

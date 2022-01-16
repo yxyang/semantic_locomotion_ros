@@ -1,6 +1,8 @@
 """Network definition for FCHarDNet."""
 import collections
 
+from absl import app
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -348,8 +350,30 @@ class hardnet(nn.Module):
                                            blk.grmul, blk.n_layers)
       self.denseBlocksUp[i].transform(blk, trt)
 
-  def forward(self, x):
+  def get_embedding(self, x):
+    """Returns the embedding without final convolution."""
+    skip_connections = []
+    size_in = x.size()
 
+    for i in range(len(self.base)):
+      x = self.base[i](x)
+      if i in self.shortcut_layers:
+        skip_connections.append(x)
+    out = x
+
+    for i in range(self.n_blocks):
+      skip = skip_connections.pop()
+      out = self.transUpBlocks[i](out, skip, True)
+      out = self.conv1x1_up[i](out)
+      out = self.denseBlocksUp[i](out)
+
+    out = F.interpolate(out,
+                        size=(size_in[2], size_in[3]),
+                        mode="bilinear",
+                        align_corners=True)
+    return out
+
+  def forward(self, x):
     skip_connections = []
     size_in = x.size()
 
@@ -372,3 +396,13 @@ class hardnet(nn.Module):
                         mode="bilinear",
                         align_corners=True)
     return out
+
+
+def main(_):
+  model = hardnet(n_classes=4)
+  sample_input = torch.zeros([1, 3, 640, 360])
+  model.forward(sample_input)
+
+
+if __name__ == "__main__":
+  app.run(main)
