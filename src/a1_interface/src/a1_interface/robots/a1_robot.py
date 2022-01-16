@@ -149,7 +149,7 @@ class A1Robot(a1.A1):
 
   @property
   def foot_forces(self):
-    return np.array(self._raw_state.footForce) - self._contact_force_threshold
+    return np.array(self._raw_state.footForce) 
 
   def update_foot_contact_force_threshold(self, leg_id, threshold):
     self._contact_force_threshold[leg_id] = threshold
