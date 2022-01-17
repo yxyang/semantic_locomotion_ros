@@ -1,5 +1,6 @@
 """A model based controller framework."""
 from datetime import datetime
+from multiprocessing import Process
 import os
 import pickle
 import threading
@@ -39,6 +40,13 @@ def get_sim_conf():
   return config
 
 
+def _dump_data(data, logdir):
+  # data, logdir = args
+  print("Dump started")
+  pickle.dump(data, open(logdir, 'wb'))
+  print("Dump done")
+
+
 class LocomotionController:
   """Generates the quadruped locomotion.
 
@@ -74,6 +82,7 @@ class LocomotionController:
     self._reset_time = self._clock()
     self._time_since_reset = 0
     self._last_command_timestamp = 0
+    self._last_image_embedding = np.zeros(4)
     self._logs = []
     if logdir:
       self._logdir = os.path.join(rospkg.get_ros_home(), logdir)
@@ -89,9 +98,13 @@ class LocomotionController:
     self._gait = None
     self._desired_gait = gait_type.SLOW
     self._handle_gait_switch()
+
     if start_running_immediately:
       self.run_thread = threading.Thread(target=self.run)
       self.run_thread.start()
+
+    # Callback timer
+    rospy.Timer(rospy.Duration(1), self._flush_logging)
 
   def setup_pybullet_client(self):
     if self._show_gui and not self._use_real_robot:
@@ -249,7 +262,7 @@ class LocomotionController:
     self._mode = self._desired_mode
     if self._desired_mode == controller_mode.DOWN:
       rospy.loginfo("Entering joint damping mode.")
-      self._flush_logging()
+      self._flush_logging(None)
     elif self._desired_mode == controller_mode.STAND:
       rospy.loginfo("Standing up.")
       self.reset_robot()
@@ -266,6 +279,7 @@ class LocomotionController:
     frame = dict(
         desired_speed=(self._swing_controller.desired_speed,
                        self._swing_controller.desired_twisting_speed),
+        gait_type=self._gait,
         timestamp=self._time_since_reset,
         base_position_ground_frame=self._state_estimator.
         com_position_ground_frame,
@@ -278,29 +292,33 @@ class LocomotionController:
         base_rpy_rate=self._robot.base_rpy_rate,
         motor_vels=self._robot.motor_velocities,
         motor_torques=self._robot.motor_torques,
-        contacts=self._robot.foot_contacts,
+        foot_contacts=self._robot.foot_contacts,
         desired_grf=qp_sol,
         robot_action=action,
         gait_generator_phase=self._gait_generator.current_phase.copy(),
         gait_generator_state=self._gait_generator.leg_state,
         ground_orientation=self._state_estimator.
         ground_orientation_world_frame,
-    )
-    if self._use_real_robot:
-      frame['foot_contact_force'] = self._robot.foot_forces
+        foot_velocities=self._robot.foot_velocities,
+        foot_forces=self._robot.foot_forces,
+        image_embedding=self._last_image_embedding)
     if self._logdir:
       self._logs.append(frame)
-      if len(self._logs) > 10000:
-        self._flush_logging()
 
-  def _flush_logging(self):
-    if self._logdir:
+  def _flush_logging(self, event):
+    """Flush logging to disk if current log object is too big."""
+    del event  # unused
+    if self._logdir and len(self._logs) > 10000:
+      logs = self._logs
+      self._logs = []
       filename = 'log_{}.pkl'.format(
           datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
-      pickle.dump(self._logs, open(os.path.join(self._logdir, filename), 'wb'))
+      p = Process(target=_dump_data,
+                  args=(logs, os.path.join(self._logdir, filename)))
+      p.start()
+      # pickle.dump(logs, open(os.path.join(self._logdir, filename), 'wb'))
       rospy.loginfo("Data logged to: {}".format(
           os.path.join(self._logdir, filename)))
-    self._logs = []
 
   def _handle_gait_switch(self):
     """Handles gait switch commands and update corresponding controllers."""
@@ -418,3 +436,6 @@ class LocomotionController:
     self._swing_controller.desired_twisting_speed = desired_rot_speed
     self._stance_controller.desired_speed = desired_lin_speed
     self._stance_controller.desired_twisting_speed = desired_rot_speed
+
+  def set_image_embedding(self, msg):
+    self._last_image_embedding = np.array(msg.embedding)
