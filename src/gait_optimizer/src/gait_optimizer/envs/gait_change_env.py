@@ -173,6 +173,8 @@ class GaitChangeEnv:
                motor_torques=robot.motor_torques,
                foot_contacts=robot.foot_contacts,
                foot_forces=robot.foot_forces,
+               gait_generator_phase=self._controller.gait_generator.
+               current_phase.copy(),
                foot_velocities=robot.foot_velocities))
       if self._show_gui:
         self._controller.pybullet_client.resetDebugVisualizerCamera(
@@ -191,10 +193,11 @@ class GaitChangeEnv:
     safety_score = metrics.safety_metric(states)
     energy_score = metrics.energy_metric(states)
     speed_score = metrics.speed_metric(states)
-    foot_velocity_score = metrics.foot_velocity_metric(states)
+    stability_score = metrics.stability_metric(states)
+    # foot_velocity_score = metrics.foot_velocity_metric(states)
     self._latest_trajectory = states
 
-    return safety_score - foot_velocity_score * 30 - \
+    return safety_score - stability_score * 10 - \
       energy_score * 1e-3 + speed_score * 3
 
   def _slowdown(self, current_speed):
