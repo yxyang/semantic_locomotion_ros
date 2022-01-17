@@ -102,6 +102,9 @@ class GaitChangeEnv:
       rospy.Subscriber("/perception/image_embedding", image_embedding,
                        self.set_image_embedding)
       rospy.init_node("gait_change_env", anonymous=True)
+      while (self._image_embedding == np.zeros(4)).all():
+        rospy.loginfo("Waiting for image embedding...")
+        time.sleep(0.5)
 
   def set_image_embedding(self, msg):
     self._image_embedding = np.array(msg.embedding)
