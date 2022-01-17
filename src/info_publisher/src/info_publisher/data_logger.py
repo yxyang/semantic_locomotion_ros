@@ -15,7 +15,7 @@ import rospy
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
-from a1_interface.msg import robot_state
+from a1_interface.msg import controller_mode, robot_state
 
 flags.DEFINE_string('logdir', 'ghost_memory', 'logdir.')
 flags.DEFINE_integer('max_num_images', 100000,
@@ -51,6 +51,10 @@ class DataLogger:
 
     if self._robot_state is None:
       self._log_state_publisher.publish("No Robot State")
+      return
+
+    if self._robot_state.controller_mode != controller_mode.WALK:
+      self._log_state_publisher.publish("Robot not walking")
       return
 
     curr_time = datetime.now()
