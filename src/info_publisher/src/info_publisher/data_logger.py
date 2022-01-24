@@ -41,17 +41,15 @@ class DataLogger:
     self._robot_state = robot_state_data
 
   def record_camera_image(self, image):
+    """Records camera image and saves related data."""
     self._camera_image = image
-    rospy.loginfo("recording cam img")
 
     if self._robot_state is None:
       self._log_state_publisher.publish("No Robot State")
-      rospy.loginfo("No robot state")
       return
 
     if self._robot_state.controller_mode != controller_mode.WALK:
       self._log_state_publisher.publish("Robot not walking")
-      rospy.loginfo("Robot not waling")
       return
 
     curr_time = datetime.now()
@@ -73,8 +71,6 @@ class DataLogger:
         full_folder, 'log_{}_{}.pkl'.format(filename_postfix, 'robot_state'))
     pickle.dump(self._robot_state, open(full_dir, 'wb'))
     self._log_state_publisher.publish("Last frame: {}".format(
-        datetime.now().strftime('%H:%M:%S')))
-    rospy.loginfo("Last frame: {}".format(
         datetime.now().strftime('%H:%M:%S')))
 
 def delete_old_files(logdir):

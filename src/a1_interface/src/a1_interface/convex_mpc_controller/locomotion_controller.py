@@ -424,14 +424,25 @@ class LocomotionController:
     return self._gait
 
   def set_desired_speed(self, speed_command):
-    """Sets the robot's desired speed."""
-    desired_lin_speed = (
+    """Sets the robot's desired speed after exponential smoothing.."""
+    old_speed = np.array([
+        self._swing_controller.desired_speed[0],
+        self._swing_controller.desired_speed[1],
+        self._swing_controller.desired_twisting_speed
+    ])
+    new_speed = np.array([
         self._gait_config.max_forward_speed * speed_command.vel_x,
         self._gait_config.max_side_speed * speed_command.vel_y,
+        self._gait_config.max_rot_speed * speed_command.rot_z
+    ])
+    smoothed_new_speed = 0.5 * old_speed + 0.5 * new_speed
+
+    desired_lin_speed = (
+        smoothed_new_speed[0],
+        smoothed_new_speed[1],
         0,
     )
-    desired_rot_speed = \
-      self._gait_config.max_rot_speed * speed_command.rot_z
+    desired_rot_speed = smoothed_new_speed[2]
     self._swing_controller.desired_speed = desired_lin_speed
     self._swing_controller.desired_twisting_speed = desired_rot_speed
     self._stance_controller.desired_speed = desired_lin_speed
