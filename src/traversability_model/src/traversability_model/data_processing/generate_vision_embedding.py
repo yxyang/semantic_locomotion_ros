@@ -75,6 +75,7 @@ def main(argv):
 
   np.savez(os.path.join(FLAGS.output_dir, 'vision_embeddings.npz'),
            timestamps=np.array(timestamps),
+           filenames=np.array(sorted(os.listdir(FLAGS.logdir))),
            embeddings=np.array(embeddings))
 
 

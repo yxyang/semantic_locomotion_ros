@@ -12,6 +12,8 @@ import numpy as np
 import rospy
 from tqdm import tqdm
 
+import pybullet
+
 flags.DEFINE_string('logdir', None, 'directory for prioperceptive data.')
 flags.DEFINE_string('output_dir', None,
                     'where to dump processed training data.')
@@ -35,6 +37,8 @@ def analyze_individual_file(args):
   actual_speeds = []
   powers = []
   imu_rates = []
+  imus = []
+  image_embeddings = []
   robot_states = pickle.load(open(os.path.join(base_dir, filename), 'rb'))
   for frame in robot_states[:-1]:
     foot_phases.append(frame['gait_generator_phase'])
@@ -43,6 +47,9 @@ def analyze_individual_file(args):
     foot_forces.append(frame['foot_forces'])
     gait_types.append(frame['gait_type'])
     actual_speeds.append(frame['base_vels_body_frame'])
+    image_embeddings.append(frame['image_embedding'])
+    imus.append(
+        pybullet.getEulerFromQuaternion(frame['base_quat_ground_frame']))
     power = np.maximum(
         frame['motor_torques'] * frame['motor_vels'] +
         0.3 * frame['motor_torques']**2, 0)
@@ -52,6 +59,7 @@ def analyze_individual_file(args):
     delta_time_s = datetime.timedelta(seconds=frame['timestamp'] -
                                       robot_states[-1]['timestamp'])
     timestamps.append(end_ts + delta_time_s)
+
   return dict(foot_phases=foot_phases,
               speed_commands=speed_commands,
               steer_commands=steer_commands,
@@ -60,7 +68,9 @@ def analyze_individual_file(args):
               foot_forces=foot_forces,
               actual_speeds=actual_speeds,
               powers=powers,
-              imu_rates=imu_rates)
+              imu_rates=imu_rates,
+              imus=imus,
+              image_embeddings=image_embeddings)
 
 
 def load_prioperceptive_data(logdir):
@@ -81,6 +91,15 @@ def load_prioperceptive_data(logdir):
   for key in results[0]:
     all_results[key] = np.concatenate([result[key] for result in results],
                                       axis=0)
+
+  # Fix timestamp misalignment
+  count = 0
+  for idx in tqdm(range(1, len(all_results['timestamps']))):
+    if all_results['timestamps'][idx] < all_results['timestamps'][idx - 1]:
+      all_results['timestamps'][idx] = all_results['timestamps'][
+          idx - 1] + datetime.timedelta(microseconds=1)
+      count += 1
+  rospy.loginfo("Fixed {} misaligned time frames.".format(count))
   return all_results
 
 
@@ -133,7 +152,8 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
 
   # Clean and label data
   result_timestamp, result_diffs, result_gaits = [], [], []
-  speed_commands, actual_speeds, powers, imu_rates = [], [], [], []
+  steer_commands, speed_commands, actual_speeds = [], [], []
+  powers, imu_rates, imus, image_embeddings = [], [], [], []
   pointers = [0, 0, 0, 0]
   for idx in tqdm(range(len(timestamps))):
     force_diffs = []
@@ -148,7 +168,10 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
                       speed_commands=np.array(speed_commands),
                       actual_speeds=np.array(actual_speeds),
                       powers=np.array(powers),
-                      imu_rates=imu_rates)
+                      imu_rates=np.array(imu_rates),
+                      imus=np.array(imus),
+                      steer_commands=np.array(steer_commands),
+                      image_embeddings=np.array(image_embeddings))
       force_diffs.append(
           np.std(step_forces[leg_id][pointers[leg_id]:pointers[leg_id] +
                                      num_steps_lookahead]))
@@ -157,8 +180,14 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
           furthest_idx,
           step_indices[leg_id][pointers[leg_id] + num_steps_lookahead])
 
+    mean_steering = np.mean(
+        np.abs(all_data['steer_commands'][idx:furthest_idx]))
+    curr_steering = np.abs(all_data['steer_commands'][idx])
+
     if FLAGS.filter_out_inconsistent_gaits:
-      if (gait_types[idx:furthest_idx] == gait_types[idx]).all():
+      if ((gait_types[idx:furthest_idx] == gait_types[idx]).all()) and (
+          timestamps[furthest_idx] - timestamps[idx] < datetime.timedelta(
+              seconds=5)) and (mean_steering < 0.1) and (curr_steering < 0.1):
         result_timestamp.append(timestamps[idx])
         result_diffs.append(np.mean(force_diffs))
         result_gaits.append(gait_types[idx])
@@ -168,6 +197,10 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
             np.mean(all_data['speed_commands'][idx:furthest_idx], axis=0))
         powers.append(np.mean(all_data['powers'][idx:furthest_idx]))
         imu_rates.append(np.mean(all_data['imu_rates'][idx:furthest_idx]))
+        imus.append(np.mean(all_data['imus'][idx:furthest_idx], axis=0))
+        steer_commands.append(
+            np.mean(all_data['steer_commands'][idx:furthest_idx]))
+        image_embeddings.append(all_data['image_embeddings'][idx])
     else:
       result_timestamp.append(timestamps[idx])
       result_diffs.append(np.mean(force_diffs))
@@ -178,6 +211,10 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
           np.mean(all_data['speed_commands'][idx:furthest_idx], axis=0))
       powers.append(np.mean(all_data['powers'][idx:furthest_idx]))
       imu_rates.append(np.mean(all_data['imu_rates'][idx:furthest_idx]))
+      imus.append(np.mean(all_data['imus'][idx:furthest_idx], axis=0))
+      steer_commands.append(
+          np.mean(all_data['steer_commands'][idx:furthest_idx]))
+      image_embeddings.append(all_data['image_embeddings'][idx])
 
 
 def main(argv):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Aligns vision labels and prioperceptive data. """
 import os
+import datetime
 
 from absl import app
 from absl import flags
@@ -17,35 +18,40 @@ FLAGS = flags.FLAGS
 
 def main(argv):
   del argv  # unused
-  robot_data = np.load(open(FLAGS.prioperception_dir, 'rb'), allow_pickle=True)
-  vision_data = np.load(open(FLAGS.vision_dir, 'rb'), allow_pickle=True)
+  robot_data = dict(
+      np.load(open(FLAGS.prioperception_dir, 'rb'), allow_pickle=True))
+  vision_data = dict(np.load(open(FLAGS.vision_dir, 'rb'), allow_pickle=True))
 
-  output_data = dict(timestamps=robot_data['timestamp'],
-                     foot_force_variance=robot_data['foot_force_difference'],
-                     gaits=robot_data['gaits'],
-                     speed_commands=robot_data['speed_commands'],
-                     actual_speeds=robot_data['actual_speeds'],
-                     powers=robot_data['powers'],
-                     imu_rates=robot_data['imu_rates'])
+  output_data = dict(timestamps=[],
+                     foot_force_difference=[],
+                     gaits=[],
+                     speed_commands=[],
+                     actual_speeds=[],
+                     powers=[],
+                     imu_rates=[],
+                     embeddings=[])
 
-  embeddings = []
+  robot_timestamps = robot_data['timestamp']
+  robot_idx = 0
 
-  vision_timestamps = vision_data['timestamps']
-  vision_embeddings = vision_data['embeddings']
-  vision_idx = 0
-
-  for robot_timestamp in tqdm(output_data['timestamps']):
+  for vision_idx, vision_timestamp in tqdm(enumerate(
+      vision_data['timestamps'])):
     while True:
-      curr_diff = abs(vision_timestamps[vision_idx] - robot_timestamp)
-      next_diff = abs(vision_timestamps[vision_idx + 1] - robot_timestamp)
-      if (curr_diff <= next_diff) or (vision_idx + 2 >=
-                                      len(vision_timestamps)):
+      curr_diff = abs(robot_timestamps[robot_idx] - vision_timestamp)
+      next_diff = abs(robot_timestamps[robot_idx + 1] - vision_timestamp)
+      if (curr_diff <= next_diff) or (robot_idx + 2 >= len(robot_timestamps)):
         break
-      vision_idx += 1
+      robot_idx += 1
 
-    embeddings.append(vision_embeddings[vision_idx])
+    if curr_diff < datetime.timedelta(seconds=2):
+      for key in output_data:
+        if key in vision_data:
+          output_data[key].append(vision_data[key][vision_idx])
+        else:
+          output_data[key].append(robot_data[key][robot_idx])
 
-  output_data["embeddings"] = np.array(embeddings)
+  for key in output_data:
+    output_data[key] = np.array(output_data[key])
   np.savez(os.path.join(FLAGS.output_dir, 'processed_data.npz'), **output_data)
 
 
