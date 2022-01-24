@@ -1,4 +1,5 @@
 <launch>
   <node pkg="gamepad_controller" type="gamepad_reader.py" name="gamepad_controller" respawn="true"/>
   <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=False --use_real_robot=True --logdir=/home/yxyang/research/semantic_locomotion_ros/logs" respawn="true"/>
+  <node pkg="traversability_model" type="eval_on_ros.py" name="gait_policy" args="" respawn="true"/>
 </launch>

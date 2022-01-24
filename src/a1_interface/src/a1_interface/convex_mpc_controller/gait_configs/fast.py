@@ -21,6 +21,6 @@ def get_config():
 
   config.desired_body_height = 0.26
   # Swing foot settings
-  config.foot_clearance_max = 0.08
+  config.foot_clearance_max = 0.11
   config.foot_clearance_land = 0.01
   return config

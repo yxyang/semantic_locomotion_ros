@@ -1,6 +1,0 @@
-<launch>
-  <node pkg="gamepad_controller" type="gamepad_reader.py" name="gamepad_controller" args="--publish_gaits=False" respawn="true"/>
-  <node pkg="gamepad_controller" type="fixed_region_gait_policy.py" name="fixed_region_gait_policy" respawn="true"/>
-  <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=False --use_real_robot=True" respawn="true"/>
-  <node pkg="info_publisher" type="image_logger.py" name="image_logger" respawn="true"/>
-</launch>

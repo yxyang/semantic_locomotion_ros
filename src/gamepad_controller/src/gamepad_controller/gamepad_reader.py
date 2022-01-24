@@ -3,7 +3,7 @@
 from absl import app
 from absl import flags
 import rospy
-from std_msgs.msg import Bool, Float32
+from std_msgs.msg import Bool#, Float32
 
 from a1_interface.msg import controller_mode
 from a1_interface.msg import gait_type
@@ -11,7 +11,6 @@ from a1_interface.msg import robot_state
 from a1_interface.msg import speed_command
 
 from gamepad_controller.gamepad_reader_lib import Gamepad
-from gamepad_controller import fixed_region_gait_policy
 
 FLAGS = flags.FLAGS
 
@@ -22,9 +21,9 @@ class RobotStateListener:
     self._is_safe = False
     self._controller_mode = controller_mode.DOWN
 
-  def callback(self, data):
-    self._is_safe = data.is_safe
-    self._controller_mode = data.controller_mode
+  def callback(self, msg):
+    self._is_safe = msg.is_safe
+    self._controller_mode = msg.controller_mode
 
   @property
   def is_safe(self):
@@ -35,7 +34,22 @@ class RobotStateListener:
     return self._controller_mode
 
 
+class GaitCommandListener:
+  """Listens and stores gait command."""
+  def __init__(self):
+    self._desired_gait_type = gait_type(type=gait_type.SLOW,
+                                        timestamp=rospy.get_rostime())
+
+  def callback(self, msg):
+    self._desired_gait_type = msg
+
+  @property
+  def desired_gait_type(self):
+    return self._desired_gait_type
+
+
 def main(_):
+  rospy.init_node('gamepad_controller', anonymous=True)
   gamepad = Gamepad()
   controller_mode_publisher = rospy.Publisher('controller_mode',
                                               controller_mode,
@@ -49,12 +63,10 @@ def main(_):
   # Define listeners
   robot_state_listener = RobotStateListener()
   rospy.Subscriber('robot_state', robot_state, robot_state_listener.callback)
-  policy = fixed_region_gait_policy.FixedRegionGaitPolicy()
-  rospy.Subscriber("/perception/traversability_score", Float32,
-                   policy.update_score)
+  gait_command_listener = GaitCommandListener()
+  rospy.Subscriber('gait_command', gait_type, gait_command_listener.callback)
 
   gait_type_publisher = rospy.Publisher('gait_type', gait_type, queue_size=1)
-  rospy.init_node('gamepad_controller', anonymous=True)
 
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
@@ -66,7 +78,7 @@ def main(_):
     estop_publisher.publish(gamepad.estop_flagged)
     autogait_publisher.publish(gamepad.use_autogait)
     if gamepad.use_autogait:
-      gait_type_publisher.publish(policy.get_gait_action())
+      gait_type_publisher.publish(gait_command_listener.desired_gait_type)
     else:
       gait_type_publisher.publish(gamepad.gait_command)
     rate.sleep()
