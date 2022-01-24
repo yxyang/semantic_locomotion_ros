@@ -28,8 +28,7 @@ class GaitPolicy:
   """Gait policy based on human labels."""
   def __init__(self, models):
     self.models = models
-    self._device = torch.device(
-        'cuda') if torch.cuda.is_available() else torch.device('cpu')
+    self._device = torch.device('cpu')
     self._last_embedding = None
 
   def callback(self, msg):
@@ -66,7 +65,7 @@ def main(argv):
   # Restore model inputs
   device = torch.device('cuda') if torch.cuda.is_available() else torch.device(
       'cpu')
-  ckpt = torch.load(os.path.join(FLAGS.model_dir, 'trained_model.pkl'))
+  ckpt = torch.load(os.path.join(FLAGS.model_dir, 'trained_model.pkl'), map_location=torch.device('cpu'))
   gait_names = ['crawl', 'walk', 'run']
   gait_models = []
   for gait_name in gait_names:
