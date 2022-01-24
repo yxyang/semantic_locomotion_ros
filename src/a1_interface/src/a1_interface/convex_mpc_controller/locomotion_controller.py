@@ -308,7 +308,7 @@ class LocomotionController:
   def _flush_logging(self, event):
     """Flush logging to disk if current log object is too big."""
     del event  # unused
-    if self._logdir and len(self._logs) > 10000:
+    if self._logdir and len(self._logs) > 1000:
       logs = self._logs
       self._logs = []
       filename = 'log_{}.pkl'.format(
