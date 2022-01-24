@@ -62,8 +62,8 @@ def generate_plot_and_save(args):
 def moving_average(data, window_size=60):
   ans = np.zeros_like(data)
   for idx in range(data.shape[0]):
-    start_idx = np.maximum(0, idx - window_size)
-    ans[idx] = np.mean(data[start_idx:start_idx + window_size], axis=0)
+    start_idx = np.maximum(0, idx - window_size + 1)
+    ans[idx] = np.mean(data[start_idx:idx + 1], axis=0)
   return ans
 
 

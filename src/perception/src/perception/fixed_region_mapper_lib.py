@@ -1,4 +1,5 @@
 """Decides gait based on average traversability score of a fixed region."""
+import collections
 import os
 from typing import Tuple
 
@@ -13,6 +14,7 @@ import torch
 from perception.configs import rugd_a1
 from perception.models import get_model
 from perception.utils import convert_state_dict
+from traversability_model.configs import config_human
 
 
 def _convert_segmentation_map(raw_segmentation_map):
@@ -28,19 +30,23 @@ class FixedRegionMapper:
     self._image_height = 360
     self._image_width = 640
     self._image_array = None
+    self._traversability_model_config = config_human.get_config()
     self._segmentation_model = self._load_segmentation_model(config)
     self._pca = self._load_pca()
     self._last_segmentation_map = None
+    self._embedding_history = collections.deque(
+        maxlen=self._traversability_model_config.
+        feature_moving_average_window_size)
 
   def _load_pca(self) -> sklearn.decomposition.PCA:
     rospack = rospkg.RosPack()
-    package_dir = os.path.join(rospack.get_path("perception"), "src")
-    embedding_dir = os.path.join(package_dir, "perception", "saved_models",
-                                 "RUGD_a1_sgd_momentum",
-                                 "image_embeddings.npz")
+    package_dir = os.path.join(rospack.get_path("traversability_model"), "src")
+    embedding_dir = os.path.join(package_dir, 'traversability_model',
+                                 'saved_models', 'pca_training_data.npz')
     image_embeddings_ckpt = np.load(open(embedding_dir, 'rb'))
-    pca = sklearn.decomposition.PCA(n_components=4)
-    pca.fit(image_embeddings_ckpt["image_embeddings"])
+    pca = sklearn.decomposition.PCA(
+        n_components=self._traversability_model_config.pca_output_dim)
+    pca.fit(image_embeddings_ckpt["pca_train_data"])
     return pca
 
   def _load_segmentation_model(self, config) -> torch.nn.Module:
@@ -48,7 +54,7 @@ class FixedRegionMapper:
     rospack = rospkg.RosPack()
     package_dir = os.path.join(rospack.get_path("perception"), "src")
 
-    n_classes = 4
+    n_classes = 25
     if torch.cuda.is_available():
       self._device = torch.device("cuda")
     else:
@@ -56,8 +62,7 @@ class FixedRegionMapper:
 
     model = get_model(config["model"], n_classes).to(self._device)
     model_dir = os.path.join(package_dir, "perception", "saved_models",
-                             "RUGD_a1_sgd_momentum",
-                             "hardnet_rugd_a1_1500.pkl")
+                             "RUGD_raw_label", "hardnet_rugd_best_model.pkl")
     state = convert_state_dict(torch.load(model_dir)["model_state"])
     model.load_state_dict(state)
     model.eval()
@@ -140,7 +145,13 @@ class FixedRegionMapper:
     embedding = np.array(embedding.cpu().detach().numpy())
     mask, _ = self._get_segmentation_mask()
     embedding_full = np.sum(mask * embedding, axis=(2, 3)) / np.sum(mask)
-    return self._pca.transform(np.array(embedding_full))[0]
+    embedding_full = embedding_full[0]
+    if (len(self._embedding_history)
+        == 0) or (not (embedding_full == self._embedding_history[-1]).all()):
+      self._embedding_history.append(embedding_full)
+
+    return self._pca.transform(
+        np.mean(self._embedding_history, axis=0).reshape((1, -1)))[0]
 
   def get_segmentation_result(self) -> Tuple[np.ndarray, float]:
     """Returns segmentation result (score and visualization)."""
