@@ -42,19 +42,16 @@ class DataLogger:
 
   def record_camera_image(self, image):
     self._camera_image = image
-
-  def record_segmentation(self, segmentation):
-    """Records segmentation and original image side by sdie."""
-    if self._camera_image is None:
-      self._log_state_publisher.publish("No Cam Image")
-      return
+    rospy.loginfo("recording cam img")
 
     if self._robot_state is None:
       self._log_state_publisher.publish("No Robot State")
+      rospy.loginfo("No robot state")
       return
 
     if self._robot_state.controller_mode != controller_mode.WALK:
       self._log_state_publisher.publish("Robot not walking")
+      rospy.loginfo("Robot not waling")
       return
 
     curr_time = datetime.now()
@@ -64,14 +61,6 @@ class DataLogger:
     full_folder = os.path.join(self._logdir, folder_name)
     if not os.path.exists(full_folder):
       os.makedirs(full_folder)
-
-    full_dir = os.path.join(
-        full_folder, 'log_{}_{}.png'.format(filename_postfix, 'segmentation'))
-
-    np_arr = np.fromstring(segmentation.data, np.uint8)
-    cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    # cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
-    cv2.imwrite(full_dir, cv_image)
 
     full_dir = os.path.join(full_folder,
                             'log_{}_{}.png'.format(filename_postfix, 'camera'))
@@ -85,7 +74,8 @@ class DataLogger:
     pickle.dump(self._robot_state, open(full_dir, 'wb'))
     self._log_state_publisher.publish("Last frame: {}".format(
         datetime.now().strftime('%H:%M:%S')))
-
+    rospy.loginfo("Last frame: {}".format(
+        datetime.now().strftime('%H:%M:%S')))
 
 def delete_old_files(logdir):
   files_list = list(os.listdir(logdir))
@@ -98,6 +88,7 @@ def delete_old_files(logdir):
 
 def main(argv):
   del argv  # unused
+  rospy.init_node("data_logger", anonymous=True)
 
   logdir = os.path.join("/home", getpass.getuser(), FLAGS.logdir)
 
@@ -107,10 +98,9 @@ def main(argv):
   data_logger = DataLogger(logdir)
   rospy.Subscriber("/perception/camera_image/compressed", CompressedImage,
                    data_logger.record_camera_image)
-  rospy.Subscriber("/perception/segmentation_map/compressed", CompressedImage,
-                   data_logger.record_segmentation)
+  #rospy.Subscriber("/perception/segmentation_map/compressed", CompressedImage,
+  #                 data_logger.record_segmentation)
   rospy.Subscriber("/robot_state", robot_state, data_logger.record_robot_state)
-  rospy.init_node("data_logger", anonymous=True)
 
   while not rospy.is_shutdown():
     delete_old_files(logdir)
