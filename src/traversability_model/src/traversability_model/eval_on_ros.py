@@ -62,10 +62,9 @@ class GaitPolicy:
     pred_stds = np.array(pred_stds)
     lcb = pred_means - pred_stds + np.array([0.3, 0., -0.3])
     desired_gait = np.argmax(lcb)
-    desired_speed = pred_means[desired_gait] * 0.34 + 0.65  # Undo normalization
-
+    desired_speed = lcb[desired_gait] * 0.34 + 0.65  # Undo normalization
     if desired_gait == self._desired_gait:
-      self._desired_speed = self._desired_gait * 0.3 + desired_speed * 0.7
+      self._desired_speed = self._desired_speed * 0.3 + desired_speed * 0.7
       self._next_desired_gait_count = 0
     else:
       if desired_gait == self._next_desired_gait:
@@ -73,7 +72,7 @@ class GaitPolicy:
         if self._next_desired_gait_count >= 8:
           # Switch to next desired gait
           self._desired_gait = self._next_desired_gait
-          self._desired_speed = self._desired_gait * 0.3 + desired_speed * 0.7
+          self._desired_speed = self._desired_speed * 0.3 + desired_speed * 0.7
           self._next_desired_gait = 0
           self._next_desired_gait_count = 1
       else:
@@ -83,7 +82,7 @@ class GaitPolicy:
                      type=self._desired_gait,
                      recommended_forward_speed=np.clip(
                          self._desired_speed /
-                         MAX_SPEED_PER_GAIT[desired_gait], 0, 1))
+                         MAX_SPEED_PER_GAIT[self._desired_gait], 0., 1.))
 
 
 def main(argv):
