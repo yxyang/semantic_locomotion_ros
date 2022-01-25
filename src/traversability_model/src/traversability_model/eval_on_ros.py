@@ -62,7 +62,7 @@ class GaitPolicy:
     pred_stds = np.array(pred_stds)
     lcb = pred_means - pred_stds + np.array([0.3, 0., -0.3])
     desired_gait = np.argmax(lcb)
-    desired_speed = np.max(lcb) * 0.34 + 0.65  # Undo normalization
+    desired_speed = pred_means[desired_gait] * 0.34 + 0.65  # Undo normalization
 
     if desired_gait == self._desired_gait:
       self._desired_speed = self._desired_gait * 0.3 + desired_speed * 0.7
@@ -81,9 +81,9 @@ class GaitPolicy:
         self._next_desired_gait_count = 1
     return gait_type(timestamp=rospy.get_rostime(),
                      type=self._desired_gait,
-                     recommended_forward_speed=np.maximum(
+                     recommended_forward_speed=np.clip(
                          self._desired_speed /
-                         MAX_SPEED_PER_GAIT[desired_gait], 0))
+                         MAX_SPEED_PER_GAIT[desired_gait], 0, 1))
 
 
 def main(argv):
