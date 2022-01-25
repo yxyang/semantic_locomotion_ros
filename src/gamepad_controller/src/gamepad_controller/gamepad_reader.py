@@ -3,7 +3,9 @@
 from absl import app
 from absl import flags
 import rospy
-from std_msgs.msg import Bool#, Float32
+from std_msgs.msg import Bool  #, Float32
+
+import numpy as np
 
 from a1_interface.msg import controller_mode
 from a1_interface.msg import gait_type
@@ -74,13 +76,18 @@ def main(_):
       rospy.loginfo('Estop automatically flagged.')
       gamepad.flag_estop()
     controller_mode_publisher.publish(gamepad.mode_command)
-    speed_command_publisher.publish(gamepad.speed_command)
     estop_publisher.publish(gamepad.estop_flagged)
     autogait_publisher.publish(gamepad.use_autogait)
     if gamepad.use_autogait:
-      gait_type_publisher.publish(gait_command_listener.desired_gait_type)
+      desired_gait = gait_command_listener.desired_gait_type
+      gait_type_publisher.publish(desired_gait)
+      cmd = gamepad.speed_command
+      cmd.vel_x = desired_gait.recommended_forward_speed * np.minimum(
+          cmd.vel_x + 1, 1)
+      speed_command_publisher.publish(cmd)
     else:
       gait_type_publisher.publish(gamepad.gait_command)
+      speed_command_publisher.publish(gamepad.speed_command)
     rate.sleep()
 
   gamepad.stop()

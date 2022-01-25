@@ -5,4 +5,5 @@ uint8 MID = 1
 uint8 FAST = 2
 
 uint8 type
+float32 recommended_forward_speed
 time timestamp

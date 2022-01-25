@@ -23,13 +23,20 @@ flags.DEFINE_string(
     'src/traversability_model/saved_models/', 'model_dir')
 FLAGS = flags.FLAGS
 
+MAX_SPEED_PER_GAIT = [0.6, 1.0, 1.4]
+
 
 class GaitPolicy:
   """Gait policy based on human labels."""
   def __init__(self, models):
     self.models = models
-    self._device = torch.device('cpu')
+    self._device = torch.device(
+        'cuda') if torch.cuda.is_available() else torch.device('cpu')
     self._last_embedding = None
+    self._desired_gait = 0
+    self._desired_speed = 0
+    self._next_desired_gait = 0
+    self._next_desired_gait_count = 0
 
   def callback(self, msg):
     """Receives embedding from perception module."""
@@ -53,9 +60,30 @@ class GaitPolicy:
 
     pred_means = np.array(pred_means)
     pred_stds = np.array(pred_stds)
-    lcb = pred_means - pred_stds + np.array([0.4, 0.2, 0])
+    lcb = pred_means - pred_stds + np.array([0.3, 0., -0.3])
     desired_gait = np.argmax(lcb)
-    return gait_type(timestamp=rospy.get_rostime(), type=desired_gait)
+    desired_speed = np.max(lcb) * 0.34 + 0.65  # Undo normalization
+
+    if desired_gait == self._desired_gait:
+      self._desired_speed = self._desired_gait * 0.3 + desired_speed * 0.7
+      self._next_desired_gait_count = 0
+    else:
+      if desired_gait == self._next_desired_gait:
+        self._next_desired_gait_count += 1
+        if self._next_desired_gait_count >= 8:
+          # Switch to next desired gait
+          self._desired_gait = self._next_desired_gait
+          self._desired_speed = self._desired_gait * 0.3 + desired_speed * 0.7
+          self._next_desired_gait = 0
+          self._next_desired_gait_count = 1
+      else:
+        self._next_desired_gait = desired_gait
+        self._next_desired_gait_count = 1
+    return gait_type(timestamp=rospy.get_rostime(),
+                     type=self._desired_gait,
+                     recommended_forward_speed=np.maximum(
+                         self._desired_speed /
+                         MAX_SPEED_PER_GAIT[desired_gait], 0))
 
 
 def main(argv):
