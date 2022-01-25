@@ -65,7 +65,8 @@ def main(argv):
   # Restore model inputs
   device = torch.device('cuda') if torch.cuda.is_available() else torch.device(
       'cpu')
-  ckpt = torch.load(os.path.join(FLAGS.model_dir, 'trained_model.pkl'), map_location=torch.device('cpu'))
+  ckpt = torch.load(os.path.join(FLAGS.model_dir, 'trained_model.pkl'),
+                    map_location=device)
   gait_names = ['crawl', 'walk', 'run']
   gait_models = []
   for gait_name in gait_names:

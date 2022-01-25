@@ -35,7 +35,7 @@ FLAGS = flags.FLAGS
 
 def generate_plot_and_save(args):
   """Generates model visualization plot and save to disk."""
-  idx, base_dir, output_dir, filename, pred_means, pred_stds = args
+  _, base_dir, output_dir, filename, pred_means, pred_stds = args
   fig = plt.figure(figsize=(15, 4))
   plt.subplot(1, 2, 1)
   plt.imshow(mpimg.imread(os.path.join(base_dir, filename)))
@@ -53,9 +53,9 @@ def generate_plot_and_save(args):
     title = "Best: Run"
 
   plt.title(title, fontsize=20)
-  # plt.savefig(os.path.join(output_dir, filename), format='png')
-  plt.savefig(os.path.join(output_dir, "image_{:05d}.png".format(idx)),
-              format='png')
+  plt.savefig(os.path.join(output_dir, filename), format='png')
+  # plt.savefig(os.path.join(output_dir, "image_{:05d}.png".format(idx)),
+              # format='png')
   plt.close(fig)
 
 

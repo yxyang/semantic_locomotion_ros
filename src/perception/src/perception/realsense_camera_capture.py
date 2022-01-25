@@ -16,8 +16,8 @@ FLAGS = flags.FLAGS
 def main(_):
   pipeline = rs.pipeline()
   config = rs.config()
-  config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8,
-                       FLAGS.frame_rate)
+  config.enable_stream(rs.stream.color, 424, 240, rs.format.bgr8,
+                       60)
   pipeline.start(config)
 
   camera_image_publisher = rospy.Publisher(

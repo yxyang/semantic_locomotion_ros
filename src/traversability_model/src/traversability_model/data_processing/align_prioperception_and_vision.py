@@ -25,8 +25,10 @@ def main(argv):
   output_data = dict(timestamps=[],
                      foot_force_difference=[],
                      gaits=[],
-                     speed_commands=[],
-                     actual_speeds=[],
+                     mean_speed_commands=[],
+                     std_speed_commands=[],
+                     mean_actual_speeds=[],
+                     std_actual_speeds=[],
                      powers=[],
                      imu_rates=[],
                      embeddings=[])

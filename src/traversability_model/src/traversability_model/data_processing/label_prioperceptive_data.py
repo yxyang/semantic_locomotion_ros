@@ -152,7 +152,8 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
 
   # Clean and label data
   result_timestamp, result_diffs, result_gaits = [], [], []
-  steer_commands, speed_commands, actual_speeds = [], [], []
+  mean_steer_commands, mean_speed_commands, std_speed_commands = [], [], []
+  mean_actual_speeds, std_actual_speeds = [], []
   powers, imu_rates, imus, image_embeddings = [], [], [], []
   pointers = [0, 0, 0, 0]
   for idx in tqdm(range(len(timestamps))):
@@ -165,12 +166,14 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
           return dict(timestamp=np.array(result_timestamp),
                       foot_force_difference=np.array(result_diffs),
                       gaits=np.array(result_gaits),
-                      speed_commands=np.array(speed_commands),
-                      actual_speeds=np.array(actual_speeds),
+                      mean_speed_commands=np.array(mean_speed_commands),
+                      std_speed_commands=np.array(std_speed_commands),
+                      mean_actual_speeds=np.array(mean_actual_speeds),
+                      std_actual_speeds=np.array(std_actual_speeds),
                       powers=np.array(powers),
                       imu_rates=np.array(imu_rates),
                       imus=np.array(imus),
-                      steer_commands=np.array(steer_commands),
+                      mean_steer_commands=np.array(mean_steer_commands),
                       image_embeddings=np.array(image_embeddings))
       force_diffs.append(
           np.std(step_forces[leg_id][pointers[leg_id]:pointers[leg_id] +
@@ -191,28 +194,36 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
         result_timestamp.append(timestamps[idx])
         result_diffs.append(np.mean(force_diffs))
         result_gaits.append(gait_types[idx])
-        actual_speeds.append(
+        mean_actual_speeds.append(
             np.mean(all_data['actual_speeds'][idx:furthest_idx], axis=0))
-        speed_commands.append(
+        std_actual_speeds.append(
+            np.std(all_data['actual_speeds'][idx:furthest_idx], axis=0))
+        mean_speed_commands.append(
             np.mean(all_data['speed_commands'][idx:furthest_idx], axis=0))
+        std_speed_commands.append(
+            np.std(all_data['speed_commands'][idx:furthest_idx], axis=0))
         powers.append(np.mean(all_data['powers'][idx:furthest_idx]))
         imu_rates.append(np.mean(all_data['imu_rates'][idx:furthest_idx]))
         imus.append(np.mean(all_data['imus'][idx:furthest_idx], axis=0))
-        steer_commands.append(
+        mean_steer_commands.append(
             np.mean(all_data['steer_commands'][idx:furthest_idx]))
         image_embeddings.append(all_data['image_embeddings'][idx])
     else:
       result_timestamp.append(timestamps[idx])
       result_diffs.append(np.mean(force_diffs))
       result_gaits.append(gait_types[idx])
-      actual_speeds.append(
+      mean_actual_speeds.append(
           np.mean(all_data['actual_speeds'][idx:furthest_idx], axis=0))
-      speed_commands.append(
+      std_actual_speeds.append(
+          np.std(all_data['actual_speeds'][idx:furthest_idx], axis=0))
+      mean_speed_commands.append(
           np.mean(all_data['speed_commands'][idx:furthest_idx], axis=0))
+      std_speed_commands.append(
+          np.std(all_data['speed_commands'][idx:furthest_idx], axis=0))
       powers.append(np.mean(all_data['powers'][idx:furthest_idx]))
       imu_rates.append(np.mean(all_data['imu_rates'][idx:furthest_idx]))
       imus.append(np.mean(all_data['imus'][idx:furthest_idx], axis=0))
-      steer_commands.append(
+      mean_steer_commands.append(
           np.mean(all_data['steer_commands'][idx:furthest_idx]))
       image_embeddings.append(all_data['image_embeddings'][idx])
 
