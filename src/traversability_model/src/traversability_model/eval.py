@@ -36,14 +36,16 @@ FLAGS = flags.FLAGS
 def generate_plot_and_save(args):
   """Generates model visualization plot and save to disk."""
   _, base_dir, output_dir, filename, pred_means, pred_stds = args
-  fig = plt.figure(figsize=(15, 4))
+  pred_means = (pred_means + np.array([0.4, 0.2, 0])) * 0.34 + 0.65
+  pred_stds = pred_stds * 0.34
+  fig = plt.figure(figsize=(8 * 1.5, 2.25 * 1.5))
   plt.subplot(1, 2, 1)
+  plt.axis('off')
   plt.imshow(mpimg.imread(os.path.join(base_dir, filename)))
   plt.subplot(1, 2, 2)
-  plt.errorbar([1, 2, 3], pred_means, yerr=pred_stds, capsize=5, fmt='o')
-  plt.ylim(-3, 3)
+  # plt.gca().get_xaxis().set_visible(False)
 
-  lcb = np.array([0.4, 0.2, 0]) + pred_means - pred_stds
+  lcb = pred_means - pred_stds
   best_gait = np.argmax(lcb)
   if best_gait == 0:
     title = "Best: Crawl"
@@ -53,10 +55,29 @@ def generate_plot_and_save(args):
     title = "Best: Run"
 
   plt.title(title, fontsize=20)
+  gait_names = ['Crawl', 'Walk', 'Run']
+
+  for idx in range(3):
+    color = '#5273ab' if idx != best_gait else '#e32f27'
+    plt.errorbar([gait_names[idx]],
+                 pred_means[idx],
+                 yerr=pred_stds[idx],
+                 capsize=10,
+                 capthick=5,
+                 elinewidth=5,
+                 markersize=10,
+                 fmt='o',
+                 color=color)
+  plt.xticks(fontsize=20)
+  plt.ylim(0, 1.6)
+  plt.xlim(-1, 3)
+  plt.ylabel('Predicted Speed (m/s)', fontsize=15)
+
   plt.savefig(os.path.join(output_dir, filename), format='png')
   # plt.savefig(os.path.join(output_dir, "image_{:05d}.png".format(idx)),
-              # format='png')
+  # format='png')
   plt.close(fig)
+  return best_gait, lcb[best_gait]
 
 
 def moving_average(data, window_size=60):
@@ -116,7 +137,14 @@ def main(argv):
     args.append(curr_arg)
 
   with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
-    _ = list(tqdm(p.imap(generate_plot_and_save, args), total=len(args)))
+    ans = list(tqdm(p.imap(generate_plot_and_save, args), total=len(args)))
+
+  gait_choices = np.array([result[0] for result in ans])
+  speed_choices = np.array([result[1] for result in ans])
+  np.savez(os.path.join(FLAGS.output_dir, 'commands.npz'),
+           gait_choices=gait_choices,
+           speed_choices=speed_choices,
+           **vision_data)
 
 
 if __name__ == "__main__":

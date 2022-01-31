@@ -183,6 +183,7 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
           furthest_idx,
           step_indices[leg_id][pointers[leg_id] + num_steps_lookahead])
 
+    furthest_idx = idx + 1
     mean_steering = np.mean(
         np.abs(all_data['steer_commands'][idx:furthest_idx]))
     curr_steering = np.abs(all_data['steer_commands'][idx])
@@ -236,7 +237,7 @@ def main(argv):
   rospy.loginfo("Cleaning up and Labeling Data...")
   labeled_prioperceptive_data = label_prioperceptive_data(prioperceptive_data)
 
-  np.savez(os.path.join(FLAGS.output_dir, 'labeled_prioperceptive_data.npz'),
+  np.savez(os.path.join(FLAGS.output_dir, 'raw_prioperceptive_data.npz'),
            **labeled_prioperceptive_data)
 
 
