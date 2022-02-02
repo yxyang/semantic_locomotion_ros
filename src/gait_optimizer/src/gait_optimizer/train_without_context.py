@@ -10,7 +10,7 @@ import numpy as np
 
 from a1_interface.worlds import plane_world, uneven_world, soft_world, slippery_world, slope_world
 from gait_optimizer.bayesian_optimization import gp_ucb
-from gait_optimizer.envs import gait_change_env
+from gait_optimizer.envs import gait_change_env_human_eval
 
 flags.DEFINE_string('logdir', None, 'where to log experiments.')
 flags.DEFINE_integer('num_iter', 10, 'Number of iterations to run.')
@@ -22,8 +22,8 @@ flags.DEFINE_enum('world_name', 'plane',
 flags.DEFINE_bool('show_gui', False, 'whether to show gui.')
 FLAGS = flags.FLAGS
 
-PARAM_LB = np.array([1.5, 0.08, 0.24, 0.1])
-PARAM_UB = np.array([3.5, 0.18, 0.3, 1.0])
+PARAM_LB = np.array([1.5, 0.08, 0.24])
+PARAM_UB = np.array([3.5, 0.18, 0.3])
 WORLD_NAME_TO_WORLD_CLASS = {
     'plane': plane_world.PlaneWorld,
     'soft': soft_world.SoftWorld,
@@ -40,14 +40,14 @@ def main(_):
     agent.restore(FLAGS.restore_checkpoint)
 
   if FLAGS.world_name == 'real':
-    env = gait_change_env.GaitChangeEnv(plane_world.PlaneWorld,
-                                        show_gui=False,
-                                        use_real_robot=True)
+    env = gait_change_env_human_eval.GaitChangeEnv(plane_world.PlaneWorld,
+                                                   show_gui=False,
+                                                   use_real_robot=True)
   else:
     world_class = WORLD_NAME_TO_WORLD_CLASS[FLAGS.world_name]
-    env = gait_change_env.GaitChangeEnv(world_class,
-                                        show_gui=FLAGS.show_gui,
-                                        use_real_robot=False)
+    env = gait_change_env_human_eval.GaitChangeEnv(world_class,
+                                                   show_gui=FLAGS.show_gui,
+                                                   use_real_robot=False)
 
   for i in range(FLAGS.num_iter):
     action = agent.get_suggestion()

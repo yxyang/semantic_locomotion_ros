@@ -102,9 +102,8 @@ class LocomotionController:
     if start_running_immediately:
       self.run_thread = threading.Thread(target=self.run)
       self.run_thread.start()
-
-    # Callback timer
-    rospy.Timer(rospy.Duration(1), self._flush_logging)
+      # Callback timer
+      rospy.Timer(rospy.Duration(1), self._flush_logging)
 
   def setup_pybullet_client(self):
     if self._show_gui and not self._use_real_robot:
