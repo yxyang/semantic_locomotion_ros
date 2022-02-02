@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from perception.configs import rugd_a1
 from perception.models import get_model
-from perception.utils import convert_state_dict
+from perception.utils import convert_state_dict, normalize_brightness
 from perception.fixed_region_mapper_lib import FixedRegionMapper
 
 flags.DEFINE_string('logdir', None, 'directory for stored images.')
@@ -24,13 +24,7 @@ FLAGS = flags.FLAGS
 def load_image(image_path):
   image = Image.open(image_path)
   image = np.array(image, dtype=np.uint8)
-  img_float = image / 255.
-  brightness = np.mean(0.2126 * img_float[..., 0] +
-                       0.7152 * img_float[..., 1] + 0.0722 * img_float[..., 2])
-  desired_brightness = 0.66
-  img_float = np.clip(img_float * desired_brightness / brightness, 0, 1)
-  image = img_float * 255
-  return image
+  return normalize_brightness(image)
 
 
 def main(argv):

@@ -8,7 +8,7 @@ import torch
 from torch.utils import data
 
 from perception.augmentations import Compose, RandomHorizontallyFlip, RandomRotate, Scale
-from perception.utils import recursive_glob
+from perception.utils import recursive_glob, normalize_brightness
 
 
 class RUGDA1Loader(data.Dataset):
@@ -110,13 +110,7 @@ class RUGDA1Loader(data.Dataset):
         :param lbl:
     """
     # RGB format
-    img_float = image / 255.
-    brightness = np.mean(0.2126 * img_float[..., 0] +
-                         0.7152 * img_float[..., 1] +
-                         0.0722 * img_float[..., 2])
-    desired_brightness = 0.66
-    img_float = np.clip(img_float * desired_brightness / brightness, 0, 1)
-    image = img_float * 255
+    image = normalize_brightness(image)
 
     # NHWC -> NCHW
     image = image.transpose(2, 0, 1)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Generates training data from prioperceptive and perception data."""
+"""Generates training data from proprioceptive and perception data."""
 import datetime
 import multiprocessing
 import os
@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 import pybullet
 
-flags.DEFINE_string('logdir', None, 'directory for prioperceptive data.')
+flags.DEFINE_string('logdir', None, 'directory for proprioceptive data.')
 flags.DEFINE_string('output_dir', None,
                     'where to dump processed training data.')
 flags.DEFINE_bool(
@@ -33,6 +33,7 @@ def analyze_individual_file(args):
   gait_types = []
   timestamps = []
   foot_forces = []
+  foot_contacts = []
   foot_phases = []
   actual_speeds = []
   powers = []
@@ -45,6 +46,7 @@ def analyze_individual_file(args):
     speed_commands.append(frame['desired_speed'][0])
     steer_commands.append(frame['desired_speed'][1])
     foot_forces.append(frame['foot_forces'])
+    foot_contacts.append(frame['foot_contacts'])
     gait_types.append(frame['gait_type'])
     actual_speeds.append(frame['base_vels_body_frame'])
     image_embeddings.append(frame['image_embedding'])
@@ -54,7 +56,7 @@ def analyze_individual_file(args):
         frame['motor_torques'] * frame['motor_vels'] +
         0.3 * frame['motor_torques']**2, 0)
     powers.append(power)
-    imu_rates.append(np.sum(np.square(frame['base_rpy_rate'][:2])))
+    imu_rates.append(frame['base_rpy_rate'])
 
     delta_time_s = datetime.timedelta(seconds=frame['timestamp'] -
                                       robot_states[-1]['timestamp'])
@@ -65,6 +67,7 @@ def analyze_individual_file(args):
               steer_commands=steer_commands,
               gait_types=gait_types,
               timestamps=timestamps,
+              foot_contacts=foot_contacts,
               foot_forces=foot_forces,
               actual_speeds=actual_speeds,
               powers=powers,
@@ -73,8 +76,8 @@ def analyze_individual_file(args):
               image_embeddings=image_embeddings)
 
 
-def load_prioperceptive_data(logdir):
-  """Loads prioperceptive data.
+def load_proprioceptive_data(logdir):
+  """Loads proprioceptive data.
 
   Returns a dict of arrays.
   """
@@ -130,7 +133,7 @@ def extract_steps_and_max_stance_forces(timestamp, foot_phase, foot_force):
     step_forces.append(foot_force[max_idx])
 
 
-def label_prioperceptive_data(all_data, num_steps_lookahead=10):
+def label_proprioceptive_data(all_data, num_steps_lookahead=10):
   """Label foot force std from robot trajectories."""
   # Get maximum contact force for each step
   timestamps = all_data['timestamps']
@@ -153,7 +156,7 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
   # Clean and label data
   result_timestamp, result_diffs, result_gaits = [], [], []
   mean_steer_commands, mean_speed_commands, std_speed_commands = [], [], []
-  mean_actual_speeds, std_actual_speeds = [], []
+  mean_actual_speeds, std_actual_speeds, contact_ious = [], [], []
   powers, imu_rates, imus, image_embeddings = [], [], [], []
   pointers = [0, 0, 0, 0]
   for idx in tqdm(range(len(timestamps))):
@@ -174,7 +177,8 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
                       imu_rates=np.array(imu_rates),
                       imus=np.array(imus),
                       mean_steer_commands=np.array(mean_steer_commands),
-                      image_embeddings=np.array(image_embeddings))
+                      image_embeddings=np.array(image_embeddings),
+                      contact_ious=np.array(contact_ious))
       force_diffs.append(
           np.std(step_forces[leg_id][pointers[leg_id]:pointers[leg_id] +
                                      num_steps_lookahead]))
@@ -183,10 +187,15 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
           furthest_idx,
           step_indices[leg_id][pointers[leg_id] + num_steps_lookahead])
 
-    furthest_idx = idx + 1
     mean_steering = np.mean(
         np.abs(all_data['steer_commands'][idx:furthest_idx]))
     curr_steering = np.abs(all_data['steer_commands'][idx])
+    expected_contact = np.fmod(all_data['foot_phases'][idx:furthest_idx],
+                               2 * np.pi) > np.pi
+    actual_contact = all_data['foot_contacts'][idx:furthest_idx]
+    contact_iou = np.sum(np.logical_and(
+        expected_contact, actual_contact)) / np.sum(
+            np.logical_or(expected_contact, actual_contact))
 
     if FLAGS.filter_out_inconsistent_gaits:
       if ((gait_types[idx:furthest_idx] == gait_types[idx]).all()) and (
@@ -204,11 +213,14 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
         std_speed_commands.append(
             np.std(all_data['speed_commands'][idx:furthest_idx], axis=0))
         powers.append(np.mean(all_data['powers'][idx:furthest_idx]))
-        imu_rates.append(np.mean(all_data['imu_rates'][idx:furthest_idx]))
-        imus.append(np.mean(all_data['imus'][idx:furthest_idx], axis=0))
+        imu_rates.append(
+            np.mean(np.abs(all_data['imu_rates'][idx:furthest_idx]), axis=0))
+        imus.append(np.mean(np.abs(all_data['imus'][idx:furthest_idx]),
+                            axis=0))
         mean_steer_commands.append(
-            np.mean(all_data['steer_commands'][idx:furthest_idx]))
+            np.mean(np.abs(all_data['steer_commands'][idx:furthest_idx])))
         image_embeddings.append(all_data['image_embeddings'][idx])
+        contact_ious.append(contact_iou)
     else:
       result_timestamp.append(timestamps[idx])
       result_diffs.append(np.mean(force_diffs))
@@ -222,23 +234,27 @@ def label_prioperceptive_data(all_data, num_steps_lookahead=10):
       std_speed_commands.append(
           np.std(all_data['speed_commands'][idx:furthest_idx], axis=0))
       powers.append(np.mean(all_data['powers'][idx:furthest_idx]))
-      imu_rates.append(np.mean(all_data['imu_rates'][idx:furthest_idx]))
-      imus.append(np.mean(all_data['imus'][idx:furthest_idx], axis=0))
+      imu_rates.append(
+          np.mean(np.abs(all_data['imu_rates'][idx:furthest_idx]), axis=0))
+      imus.append(np.mean(np.abs(all_data['imus'][idx:furthest_idx]), axis=0))
       mean_steer_commands.append(
-          np.mean(all_data['steer_commands'][idx:furthest_idx]))
+          np.mean(np.abs(all_data['steer_commands'][idx:furthest_idx])))
       image_embeddings.append(all_data['image_embeddings'][idx])
+      contact_ious.append(contact_iou)
 
 
 def main(argv):
   del argv  # unused
 
   rospy.loginfo("Loading data from disk...")
-  prioperceptive_data = load_prioperceptive_data(FLAGS.logdir)
+  proprioceptive_data = load_proprioceptive_data(FLAGS.logdir)
+  np.savez(os.path.join(FLAGS.output_dir, 'raw_proprioceptive_data.npz'),
+           **proprioceptive_data)
   rospy.loginfo("Cleaning up and Labeling Data...")
-  labeled_prioperceptive_data = label_prioperceptive_data(prioperceptive_data)
+  labeled_proprioceptive_data = label_proprioceptive_data(proprioceptive_data)
 
-  np.savez(os.path.join(FLAGS.output_dir, 'raw_prioperceptive_data.npz'),
-           **labeled_prioperceptive_data)
+  np.savez(os.path.join(FLAGS.output_dir, 'labeled_proprioceptive_data.npz'),
+           **labeled_proprioceptive_data)
 
 
 if __name__ == "__main__":

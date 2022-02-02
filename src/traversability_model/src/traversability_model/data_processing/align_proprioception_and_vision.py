@@ -31,7 +31,9 @@ def main(argv):
                      std_actual_speeds=[],
                      powers=[],
                      imu_rates=[],
-                     embeddings=[])
+                     imus=[],
+                     embeddings=[],
+                     contact_ious=[])
 
   robot_timestamps = robot_data['timestamp']
   robot_idx = 0

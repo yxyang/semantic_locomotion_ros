@@ -56,3 +56,12 @@ def get_logger(logdir):
   logger.addHandler(hdlr)
   logger.setLevel(logging.INFO)
   return logger
+
+def normalize_brightness(input_image, desired_brightness=0.66):
+  img_float = input_image / 255.
+  brightness = np.mean(0.2126 * img_float[..., 0] +
+                       0.7152 * img_float[..., 1] +
+                       0.0722 * img_float[..., 2])
+  img_float = np.clip(img_float * desired_brightness / brightness, 0, 1)
+  img = img_float * 255
+  return img
