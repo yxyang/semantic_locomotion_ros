@@ -129,7 +129,11 @@ class GaitChangeEnv:
       desired_speed = self._gamepad.speed_command
       desired_speed[0] *= max_forward_speed
       self._controller.swing_controller.desired_speed = desired_speed
+      self._controller.swing_controller.desired_twisting_speed = \
+        desired_speed[2]
       self._controller.stance_controller.desired_speed = desired_speed
+      self._controller.stance_controller.desired_twisting_speed = \
+        desired_speed[2]
       self._controller.update()
 
       # Step controller

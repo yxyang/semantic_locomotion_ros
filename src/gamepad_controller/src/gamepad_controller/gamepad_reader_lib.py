@@ -50,8 +50,8 @@ class Gamepad:
   def __init__(self,
                vel_scale_x: float = 1.,
                vel_scale_y: float = 1.,
-               vel_scale_rot: float = 1.,
-               max_acc: float = 3.):
+               vel_scale_rot: float = 3.,
+               max_acc: float = 6.):
     """Initialize the gamepad controller.
     Args:
       vel_scale_x: maximum absolute x-velocity command.
