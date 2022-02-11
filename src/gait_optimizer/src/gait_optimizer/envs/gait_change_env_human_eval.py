@@ -40,7 +40,7 @@ class GaitChangeEnv:
                show_gui: bool = False,
                use_real_robot: bool = False,
                use_real_camera: bool = False,
-               episode_length: float = 4,
+               episode_length: float = 3,
                settledown_time: float = 2):
     if gait_config is None:
       gait_config = get_default_gait_config()
@@ -57,7 +57,8 @@ class GaitChangeEnv:
         use_real_robot=use_real_robot,
         show_gui=show_gui,
         world_class=world_class,
-        start_running_immediately=False)
+        start_running_immediately=False,
+        logdir=None)
     self._controller.set_controller_mode(
         controller_mode(mode=controller_mode.WALK))
     self._controller._handle_mode_switch()
@@ -76,11 +77,11 @@ class GaitChangeEnv:
     self._gamepad = gamepad_reader.Gamepad()
 
     if self._use_real_camera:
-      self._image_embedding = np.zeros(4)
+      self._image_embedding = np.zeros(5)
       rospy.Subscriber("/perception/image_embedding", image_embedding,
                        self.set_image_embedding)
       rospy.init_node("gait_change_env", anonymous=True)
-      while (self._image_embedding == np.zeros(4)).all():
+      while (self._image_embedding == np.zeros(5)).all():
         rospy.loginfo("Waiting for image embedding...")
         time.sleep(0.5)
 
