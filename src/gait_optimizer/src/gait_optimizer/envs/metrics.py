@@ -22,7 +22,7 @@ def energy_metric(states):
 
 
 def stability_metric(states):
-  base_rpy_rate = np.array([frame["base_rpy_rate"] for frame in states])
+  base_rpy_rate = np.array([frame["base_rpy_rate"][:2] for frame in states])
   return np.mean(np.square(base_rpy_rate))
 
 def speed_metric(states):

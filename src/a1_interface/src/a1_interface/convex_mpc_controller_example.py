@@ -43,7 +43,6 @@ def main(argv):
     robot = controller.robot
     state = robot_state(is_safe=controller.is_safe,
                         controller_mode=controller.mode,
-                        gait_type=controller.gait,
                         timestamp=rospy.get_rostime(),
                         base_velocity=robot.base_velocity,
                         base_orientation_rpy=robot.base_orientation_rpy,

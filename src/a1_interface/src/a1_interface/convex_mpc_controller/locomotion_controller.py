@@ -20,7 +20,7 @@ from a1_interface.convex_mpc_controller import com_velocity_estimator
 from a1_interface.convex_mpc_controller import offset_gait_generator
 from a1_interface.convex_mpc_controller import raibert_swing_leg_controller
 from a1_interface.convex_mpc_controller import torque_stance_leg_controller_mpc
-from a1_interface.convex_mpc_controller.gait_configs import slow, mid, fast
+from a1_interface.convex_mpc_controller.gait_configs import slow
 from a1_interface.robots import a1
 from a1_interface.robots import a1_robot
 from a1_interface.robots.motors import MotorCommand
@@ -95,8 +95,15 @@ class LocomotionController:
 
     self._mode = controller_mode.DOWN
     self.set_controller_mode(controller_mode(mode=controller_mode.STAND))
-    self._gait = None
-    self._desired_gait = gait_type.SLOW
+    slow_gait = slow.get_config()
+    self._desired_gait = gait_type(
+        step_frequency=slow_gait.gait_parameters[0],
+        foot_clearance=slow_gait.foot_clearance_max,
+        base_height=slow_gait.desired_body_height,
+        max_forward_speed=slow_gait.max_forward_speed,
+        recommended_forward_speed=slow_gait.max_forward_speed,
+        timestamp=rospy.get_rostime())
+    self._gait = self._desired_gait
     self._handle_gait_switch()
 
     if start_running_immediately:
@@ -321,29 +328,22 @@ class LocomotionController:
 
   def _handle_gait_switch(self):
     """Handles gait switch commands and update corresponding controllers."""
-    if self._gait == self._desired_gait:
+    if (self._gait.step_frequency == self._desired_gait.step_frequency) and (
+        self._gait.foot_clearance == self._desired_gait.foot_clearance) and (
+            self._gait.base_height == self._desired_gait.base_height):
       return
-    if self._desired_gait == gait_type.SLOW:
-      rospy.loginfo("Switched to Slow gait.")
-      self._gait_config = slow.get_config()
-    elif self._desired_gait == gait_type.MID:
-      rospy.loginfo("Switched  to Medium gait.")
-      self._gait_config = mid.get_config()
-    else:
-      rospy.loginfo("Switched to Fast gait.")
-      self._gait_config = fast.get_config()
 
     self._gait = self._desired_gait
-    self._gait_generator.gait_params = self._gait_config.gait_parameters
-    self._swing_controller.foot_height = self._gait_config.foot_clearance_max
-    self._swing_controller.foot_landing_clearance = \
-      self._gait_config.foot_clearance_land
+    self._gait_generator.gait_params[0] = self._gait.step_frequency
+    self._swing_controller.foot_height = self._gait.foot_clearance
+    # self._swing_controller.foot_landing_clearance = \
+    #   self._gait_config.foot_clearance_land
     self._swing_controller.desired_body_height = \
-      self._gait_config.desired_body_height
-    self._stance_controller.update_mpc_config(
-        self._gait_config.mpc_foot_friction, self._gait_config.mpc_body_mass,
-        self._gait_config.mpc_body_inertia, self._gait_config.mpc_weight,
-        self._gait_config.desired_body_height)
+      self._gait.base_height
+    # self._stance_controller.update_mpc_config(
+    #     self._gait_config.mpc_foot_friction, self._gait_config.mpc_body_mass,
+    #     self._gait_config.mpc_body_inertia, self._gait_config.mpc_weight)
+    self._stance_controller.desired_body_height = self._gait.base_height
 
   def run(self):
     """The low-level control thread."""
@@ -391,7 +391,7 @@ class LocomotionController:
     self._last_command_timestamp = self._time_since_reset
 
   def set_gait(self, command):
-    self._desired_gait = command.type
+    self._desired_gait = command
 
   @property
   def is_safe(self):
@@ -430,9 +430,10 @@ class LocomotionController:
         self._swing_controller.desired_twisting_speed
     ])
     new_speed = np.array([
-        self._gait_config.max_forward_speed * speed_command.vel_x,
-        self._gait_config.max_side_speed * speed_command.vel_y,
-        self._gait_config.max_rot_speed * speed_command.rot_z
+        self._gait.max_forward_speed * speed_command.vel_x,
+        0.5 * speed_command.vel_y, 0.5 * speed_command.rot_z
+        # self._gait_config.max_side_speed * speed_command.vel_y,
+        # self._gait_config.max_rot_speed * speed_command.rot_z
     ])
     smoothed_new_speed = 0.5 * old_speed + 0.5 * new_speed
 

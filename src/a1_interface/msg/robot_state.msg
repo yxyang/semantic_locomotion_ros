@@ -2,7 +2,6 @@
 
 bool is_safe
 uint8 controller_mode
-uint8 gait_type
 float64[] base_velocity
 float64[] base_orientation_rpy
 float64[] motor_angles

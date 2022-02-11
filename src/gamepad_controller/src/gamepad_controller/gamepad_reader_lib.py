@@ -1,4 +1,5 @@
 """Interface for reading commands from Logitech F710 Gamepad."""
+import enum
 import itertools
 import threading
 import time
@@ -9,6 +10,7 @@ import numpy as np
 import rospy
 from third_party import inputs
 
+from a1_interface.convex_mpc_controller.gait_configs import slow, mid, fast
 from a1_interface.msg import controller_mode
 from a1_interface.msg import gait_type
 from a1_interface.msg import speed_command
@@ -19,7 +21,18 @@ MAX_ABS_VAL = 32768
 ALLOWED_MODES = [
     controller_mode.STAND, controller_mode.WALK, controller_mode.DOWN
 ]
-ALLOWED_GAITS = [gait_type.SLOW, gait_type.MID, gait_type.FAST]
+
+ALLOWED_GAITS = [slow.get_config(), mid.get_config(), fast.get_config()]
+
+
+class GaitMode(enum.Enum):
+  # Manually switch between a set of discrete gaits, and manually control
+  # robot speed.
+  MANUAL_GAIT = 1
+  # Policy specifies gait. Teleop specifies desired speed / steering.
+  AUTOGAIT_TRAIN = 2
+  # Policy specifies gait + speed. Teleop specifies steering.
+  AUTOGAIT_TEST = 3
 
 
 def _interpolate(raw_reading, max_raw_reading, new_scale):
@@ -57,17 +70,19 @@ class Gamepad:
     self._walk_height = 0.
     self._foot_height = 0.
 
-    self._gait_generator = itertools.cycle(ALLOWED_GAITS)
-    self._gait = next(self._gait_generator)
+    self._manual_gait_generator = itertools.cycle(ALLOWED_GAITS)
+    self._manual_gait = next(self._manual_gait_generator)
     self._mode_generator = itertools.cycle(ALLOWED_MODES)
     self._mode = next(self._mode_generator)
+    self._gait_mode_generator = itertools.cycle(
+        [GaitMode.MANUAL_GAIT, GaitMode.AUTOGAIT_TRAIN, GaitMode.AUTOGAIT_TEST])
+    self._gait_mode = next(self._gait_mode_generator)
 
     # Controller states
     self.vx_raw, self.vy_raw, self.wz_raw = 0., 0., 0.
     self.vx, self.vy, self.wz = 0., 0., 0.
     self._max_acc = max_acc
     self._estop_flagged = False
-    self._use_autogait = False
     self.is_running = True
     self.last_timestamp = time.time()
 
@@ -102,8 +117,7 @@ class Gamepad:
     if event.ev_type == 'Key' and event.code == 'BTN_TL':
       self._lb_pressed = bool(event.state)
       if not self._estop_flagged and event.state == 0:
-        self._gait = next(self._gait_generator)
-        rospy.loginfo("Switched gait mode to {}.".format(self._gait))
+        self._manual_gait = next(self._manual_gait_generator)
     elif event.ev_type == 'Key' and event.code == 'BTN_TR':
       self._rb_pressed = bool(event.state)
       if not self._estop_flagged and event.state == 0:
@@ -114,7 +128,8 @@ class Gamepad:
     elif event.ev_type == 'Key' and event.code == 'BTN_THUMBR':
       self._rj_pressed = bool(event.state)
       if self._rj_pressed:
-        self._use_autogait = not self._use_autogait
+        self._gait_mode = next(self._gait_mode_generator)
+        rospy.loginfo("Switched gait mode to {}.".format(self._gait_mode))
     elif event.ev_type == 'Absolute' and event.code == 'ABS_RX':
       # Left Joystick L/R axis
       self.vy_raw = _interpolate(-event.state, MAX_ABS_VAL, self._vel_scale_y)
@@ -124,10 +139,6 @@ class Gamepad:
     elif event.ev_type == 'Absolute' and event.code == 'ABS_X':
       self.wz_raw = _interpolate(-event.state, MAX_ABS_VAL,
                                  self._vel_scale_rot)
-    elif event.ev_type == 'Absolute' and event.code == 'ABS_Z':
-      self._walk_height = _interpolate(-event.state, MAX_ABS_VAL, 1)
-    elif event.ev_type == 'Absolute' and event.code == 'ABS_RZ':
-      self._foot_height = _interpolate(-event.state, MAX_ABS_VAL, 1)
 
     if self._estop_flagged and self._lj_pressed:
       self._estop_flagged = False
@@ -164,9 +175,8 @@ class Gamepad:
     return self._estop_flagged
 
   @property
-  def use_autogait(self):
-    return self._use_autogait
-
+  def gait_mode(self):
+    return self._gait_mode
 
   def flag_estop(self):
     if not self._estop_flagged:
@@ -185,7 +195,13 @@ class Gamepad:
 
   @property
   def gait_command(self):
-    return gait_type(type=self._gait, timestamp=rospy.get_rostime())
+    return gait_type(
+        step_frequency=self._manual_gait.gait_parameters[0],
+        foot_clearance=self._manual_gait.foot_clearance_max,
+        base_height=self._manual_gait.desired_body_height,
+        max_forward_speed=self._manual_gait.max_forward_speed,
+        recommended_forward_speed=self._manual_gait.max_forward_speed,
+        timestamp=rospy.get_rostime())
 
   def stop(self):
     self.is_running = False

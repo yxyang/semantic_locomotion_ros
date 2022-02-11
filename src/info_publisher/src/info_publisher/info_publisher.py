@@ -46,17 +46,13 @@ class ControllerStateRecorder:
 class AutogaitRecorder:
   """Records gait status (manual vs auto)"""
   def __init__(self):
-    self._autogait = False
+    self._autogait = "Manual"
 
   def record_autogait(self, autogait):
     self._autogait = autogait.data
 
   def get_info_string(self):
-    if self._autogait:
-      return "Auto Gait"
-    else:
-      return "Manual Gait"
-
+    return self._autogait
 
 def main(argv):
   del argv  # unused
@@ -65,7 +61,7 @@ def main(argv):
   autogait_recorder = AutogaitRecorder()
   rospy.Subscriber("robot_state", robot_state, state_recorder.record_state)
   rospy.Subscriber("estop", Bool, controller_recorder.record_estop)
-  rospy.Subscriber("autogait", Bool, autogait_recorder.record_autogait)
+  rospy.Subscriber("autogait", String, autogait_recorder.record_autogait)
   robot_state_publisher = rospy.Publisher('status/robot_state_string',
                                           String,
                                           queue_size=1)

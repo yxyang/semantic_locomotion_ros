@@ -287,11 +287,17 @@ class TorqueStanceLegController:
 
   def update_mpc_config(self, mpc_friction_coef: float, mpc_mass: float,
                         mpc_inertia: Sequence[float],
-                        mpc_weight: Sequence[float],
-                        desired_body_height: float) -> None:
+                        mpc_weight: Sequence[float]) -> None:
     self._friction_coeffs = np.ones(4) * mpc_friction_coef
     self._body_mass = mpc_mass
     self._body_inertia_list = mpc_inertia
     self._weights_list = mpc_weight
     self.reset(self._robot.time_since_reset)
+
+  @property
+  def desired_body_height(self):
+    return self._desired_body_height
+
+  @desired_body_height.setter
+  def desired_body_height(self, desired_body_height: float) -> None:
     self._desired_body_height = desired_body_height

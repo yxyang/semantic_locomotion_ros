@@ -3,7 +3,7 @@
 from absl import app
 from absl import flags
 import rospy
-from std_msgs.msg import Bool  #, Float32
+from std_msgs.msg import Bool, String  #, Float32
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from a1_interface.msg import gait_type
 from a1_interface.msg import robot_state
 from a1_interface.msg import speed_command
 
-from gamepad_controller.gamepad_reader_lib import Gamepad
+from gamepad_controller.gamepad_reader_lib import Gamepad, GaitMode
 
 FLAGS = flags.FLAGS
 
@@ -39,7 +39,11 @@ class RobotStateListener:
 class GaitCommandListener:
   """Listens and stores gait command."""
   def __init__(self):
-    self._desired_gait_type = gait_type(type=gait_type.SLOW,
+    self._desired_gait_type = gait_type(step_frequency=3,
+                                        base_height=0.26,
+                                        foot_clearance=0.13,
+                                        recommended_forward_speed=1,
+                                        max_forward_speed=1.6,
                                         timestamp=rospy.get_rostime())
 
   def callback(self, msg):
@@ -60,7 +64,7 @@ def main(_):
                                             speed_command,
                                             queue_size=1)
   estop_publisher = rospy.Publisher('estop', Bool, queue_size=1)
-  autogait_publisher = rospy.Publisher('autogait', Bool, queue_size=1)
+  autogait_publisher = rospy.Publisher('autogait', String, queue_size=1)
 
   # Define listeners
   robot_state_listener = RobotStateListener()
@@ -77,17 +81,29 @@ def main(_):
       gamepad.flag_estop()
     controller_mode_publisher.publish(gamepad.mode_command)
     estop_publisher.publish(gamepad.estop_flagged)
-    autogait_publisher.publish(gamepad.use_autogait)
-    if gamepad.use_autogait:
+    autogait_publisher.publish(str(gamepad.gait_mode))
+    if gamepad.gait_mode == GaitMode.MANUAL_GAIT:
+      gait_type_publisher.publish(gamepad.gait_command)
+      speed_command_publisher.publish(gamepad.speed_command)
+    elif gamepad.gait_mode == GaitMode.AUTOGAIT_TRAIN:
       desired_gait = gait_command_listener.desired_gait_type
       gait_type_publisher.publish(desired_gait)
       cmd = gamepad.speed_command
-      cmd.vel_x = desired_gait.recommended_forward_speed * np.minimum(
-          cmd.vel_x + 1, 1)
       speed_command_publisher.publish(cmd)
     else:
-      gait_type_publisher.publish(gamepad.gait_command)
-      speed_command_publisher.publish(gamepad.speed_command)
+      # AUTOGAIT_TEST, human could adjust speed
+      desired_gait = gait_command_listener.desired_gait_type
+      gait_type_publisher.publish(desired_gait)
+      cmd = gamepad.speed_command
+      neutral_throttle = desired_gait.recommended_forward_speed / \
+        desired_gait.max_forward_speed
+      cmd.vel_x = np.where(
+          cmd.vel_x < 0,
+          # Brake
+          (cmd.vel_x + 1) * neutral_throttle,
+          # Accelerate
+          neutral_throttle + cmd.vel_x * (1 - neutral_throttle))
+      speed_command_publisher.publish(cmd)
     rate.sleep()
 
   gamepad.stop()
