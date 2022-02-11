@@ -4,7 +4,7 @@ import numpy as np
 import rospy
 
 from a1_interface.convex_mpc_controller.gait_configs import slow
-from a1_interface.msg import gait_type
+from a1_interface.msg import controller_mode, gait_type
 
 
 class GaitChangeEnvAsync:
@@ -44,14 +44,14 @@ class GaitChangeEnvAsync:
       # Record last episode
       avg_throttle_ratio = np.mean(self._speed_command_history, axis=0)[0]
       reward = self._last_gait_command.max_forward_speed * avg_throttle_ratio
-      avg_turning = np.mean(np.abs(self._speed_command_history), axis=0)[2]
+      avg_turning = np.mean(self._speed_command_history, axis=0)[2]
       if avg_turning < 0.1:
         self._agent.receive_observation(self._last_image_embedding,
                                         self._last_gait_command,
                                         reward,
                                         refit_gp=False)
-      print("Context: {}, Action: {}, Reward: {}".format(
-          self._last_image_embedding, self._last_gait_command, reward))
+        print("Context: {}, Action: {}, Reward: {}".format(
+            self._last_image_embedding, self._last_gait_command, reward))
 
       # Start a new episode
       self._last_episode_timestamp = msg.timestamp
@@ -63,5 +63,10 @@ class GaitChangeEnvAsync:
 
   def autogait_callback(self, msg):
     if msg.data != "GaitMode.AUTOGAIT_TRAIN":
+      self._last_episode_timestamp = rospy.get_rostime()
+      self._speed_command_history = []
+
+  def controller_mode_callback(self, msg):
+    if msg.mode != controller_mode.WALK:
       self._last_episode_timestamp = rospy.get_rostime()
       self._speed_command_history = []

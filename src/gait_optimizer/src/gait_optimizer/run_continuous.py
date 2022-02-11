@@ -8,7 +8,7 @@ import numpy as np
 import rospy
 from std_msgs.msg import String
 
-from a1_interface.msg import speed_command
+from a1_interface.msg import controller_mode, speed_command
 from gait_optimizer.bayesian_optimization import cgp_ucb
 from gait_optimizer.envs import gait_change_env_async
 from perception.msg import image_embedding
@@ -42,12 +42,15 @@ def main(_):
                    env.image_callback)
   rospy.Subscriber('speed_command', speed_command, env.speed_command_callback)
   rospy.Subscriber('autogait', String, env.autogait_callback)
+  rospy.Subscriber('controller_mode', controller_mode,
+                   env.controller_mode_callback)
 
   rate = rospy.Rate(1. / FLAGS.eval_duration)
   while not rospy.is_shutdown():
     agent.refit_gp()
     agent.save(FLAGS.logdir)
     rate.sleep()
+
 
 if __name__ == '__main__':
   app.run(main)
