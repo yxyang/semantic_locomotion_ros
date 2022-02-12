@@ -12,7 +12,7 @@ from third_party import inputs
 
 from a1_interface.convex_mpc_controller.gait_configs import slow, mid, fast
 from a1_interface.msg import controller_mode
-from a1_interface.msg import gait_type
+from a1_interface.msg import gait_command
 from a1_interface.msg import speed_command
 
 FLAGS = flags.FLAGS
@@ -28,11 +28,11 @@ ALLOWED_GAITS = [slow.get_config(), mid.get_config(), fast.get_config()]
 class GaitMode(enum.Enum):
   # Manually switch between a set of discrete gaits, and manually control
   # robot speed.
-  MANUAL_GAIT = 1
+  MANUAL_SPEED_MANUAL_GAIT = 1
   # Policy specifies gait. Teleop specifies desired speed / steering.
-  AUTOGAIT_TRAIN = 2
+  MANUAL_SPEED_AUTO_GAIT = 2
   # Policy specifies gait + speed. Teleop specifies steering.
-  AUTOGAIT_TEST = 3
+  AUTO_SPEED_AUTO_GAIT = 3
 
 
 def _interpolate(raw_reading, max_raw_reading, new_scale):
@@ -48,9 +48,9 @@ class Gamepad:
   3) Use the right joystick for rotation around the z-axis.
   """
   def __init__(self,
-               vel_scale_x: float = 1.,
-               vel_scale_y: float = 1.,
-               vel_scale_rot: float = 3.,
+               vel_scale_x: float = 2.,
+               vel_scale_y: float = .6,
+               vel_scale_rot: float = 1.,
                max_acc: float = 6.):
     """Initialize the gamepad controller.
     Args:
@@ -74,8 +74,10 @@ class Gamepad:
     self._manual_gait = next(self._manual_gait_generator)
     self._mode_generator = itertools.cycle(ALLOWED_MODES)
     self._mode = next(self._mode_generator)
-    self._gait_mode_generator = itertools.cycle(
-        [GaitMode.MANUAL_GAIT, GaitMode.AUTOGAIT_TRAIN, GaitMode.AUTOGAIT_TEST])
+    self._gait_mode_generator = itertools.cycle([
+        GaitMode.MANUAL_SPEED_MANUAL_GAIT, GaitMode.MANUAL_SPEED_AUTO_GAIT,
+        # GaitMode.AUTO_SPEED_AUTO_GAIT
+    ])
     self._gait_mode = next(self._gait_mode_generator)
 
     # Controller states
@@ -195,13 +197,11 @@ class Gamepad:
 
   @property
   def gait_command(self):
-    return gait_type(
-        step_frequency=self._manual_gait.gait_parameters[0],
-        foot_clearance=self._manual_gait.foot_clearance_max,
-        base_height=self._manual_gait.desired_body_height,
-        max_forward_speed=self._manual_gait.max_forward_speed,
-        recommended_forward_speed=self._manual_gait.max_forward_speed,
-        timestamp=rospy.get_rostime())
+    return gait_command(timing_parameters=self._manual_gait.timing_parameters,
+                        foot_clearance=self._manual_gait.foot_clearance_max,
+                        base_height=self._manual_gait.desired_body_height,
+                        max_forward_speed=self._manual_gait.max_forward_speed,
+                        timestamp=rospy.get_rostime())
 
   def stop(self):
     self.is_running = False

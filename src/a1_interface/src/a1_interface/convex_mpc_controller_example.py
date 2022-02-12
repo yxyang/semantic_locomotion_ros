@@ -6,7 +6,7 @@ from absl import flags
 import rospy
 
 from a1_interface.msg import controller_mode
-from a1_interface.msg import gait_type
+from a1_interface.msg import gait_command
 from a1_interface.msg import robot_state
 from a1_interface.msg import speed_command
 from a1_interface.convex_mpc_controller import locomotion_controller
@@ -31,7 +31,7 @@ def main(argv):
                    controller.set_controller_mode)
   rospy.Subscriber("speed_command", speed_command,
                    controller.set_desired_speed)
-  rospy.Subscriber("gait_type", gait_type, controller.set_gait)
+  rospy.Subscriber("gait_command", gait_command, controller.set_gait)
   rospy.Subscriber("perception/image_embedding", image_embedding,
                    controller.set_image_embedding)
   robot_state_publisher = rospy.Publisher('robot_state',
@@ -41,15 +41,16 @@ def main(argv):
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
     robot = controller.robot
-    state = robot_state(is_safe=controller.is_safe,
-                        controller_mode=controller.mode,
-                        timestamp=rospy.get_rostime(),
-                        base_velocity=robot.base_velocity,
-                        base_orientation_rpy=robot.base_orientation_rpy,
-                        motor_angles=robot.motor_angles,
-                        motor_velocities=robot.motor_velocities,
-                        motor_torques=robot.motor_torques,
-                        foot_contacts=robot.foot_contacts)
+    state = robot_state(
+        is_safe=controller.is_safe,
+        controller_mode=controller.mode,
+        timestamp=rospy.get_rostime(),
+        base_velocity=controller.state_estimator.com_velocity_body_frame,
+        base_orientation_rpy=robot.base_orientation_rpy,
+        motor_angles=robot.motor_angles,
+        motor_velocities=robot.motor_velocities,
+        motor_torques=robot.motor_torques,
+        foot_contacts=robot.foot_contacts)
     robot_state_publisher.publish(state)
     if controller.time_since_reset - controller.last_command_timestamp \
       > WATCHDOG_TIMEOUT_SECS:

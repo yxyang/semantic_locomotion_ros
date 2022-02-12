@@ -14,7 +14,7 @@ import rospy
 from pybullet_utils import bullet_client
 import pybullet
 
-from a1_interface.msg import gait_type
+from a1_interface.msg import gait_command
 from a1_interface.msg import controller_mode
 from a1_interface.convex_mpc_controller import com_velocity_estimator
 from a1_interface.convex_mpc_controller import offset_gait_generator
@@ -41,10 +41,7 @@ def get_sim_conf():
 
 
 def _dump_data(data, logdir):
-  # data, logdir = args
-  print("Dump started")
   pickle.dump(data, open(logdir, 'wb'))
-  print("Dump done")
 
 
 class LocomotionController:
@@ -96,12 +93,11 @@ class LocomotionController:
     self._mode = controller_mode.DOWN
     self.set_controller_mode(controller_mode(mode=controller_mode.STAND))
     slow_gait = slow.get_config()
-    self._desired_gait = gait_type(
-        step_frequency=slow_gait.gait_parameters[0],
+    self._desired_gait = gait_command(
+        timing_parameters=slow_gait.timing_parameters,
         foot_clearance=slow_gait.foot_clearance_max,
         base_height=slow_gait.desired_body_height,
         max_forward_speed=slow_gait.max_forward_speed,
-        recommended_forward_speed=slow_gait.max_forward_speed,
         timestamp=rospy.get_rostime())
     self._gait = self._desired_gait
     self._handle_gait_switch()
@@ -285,7 +281,7 @@ class LocomotionController:
     frame = dict(
         desired_speed=(self._swing_controller.desired_speed,
                        self._swing_controller.desired_twisting_speed),
-        gait_type=self._gait,
+        gait_command=self._gait,
         timestamp=self._time_since_reset,
         base_position_ground_frame=self._state_estimator.
         com_position_ground_frame,
@@ -328,13 +324,14 @@ class LocomotionController:
 
   def _handle_gait_switch(self):
     """Handles gait switch commands and update corresponding controllers."""
-    if (self._gait.step_frequency == self._desired_gait.step_frequency) and (
-        self._gait.foot_clearance == self._desired_gait.foot_clearance) and (
-            self._gait.base_height == self._desired_gait.base_height):
+    if (np.array(self._gait.timing_parameters) == np.array(
+        self._desired_gait.timing_parameters)).all() and (
+            self._gait.foot_clearance == self._desired_gait.foot_clearance
+        ) and (self._gait.base_height == self._desired_gait.base_height):
       return
 
     self._gait = self._desired_gait
-    self._gait_generator.gait_params[0] = self._gait.step_frequency
+    self._gait_generator.gait_params = self._gait.timing_parameters
     self._swing_controller.foot_height = self._gait.foot_clearance
     # self._swing_controller.foot_landing_clearance = \
     #   self._gait_config.foot_clearance_land
@@ -430,12 +427,10 @@ class LocomotionController:
         self._swing_controller.desired_twisting_speed
     ])
     new_speed = np.array([
-        self._gait.max_forward_speed * speed_command.vel_x,
-        0.5 * speed_command.vel_y, 0.5 * speed_command.rot_z
-        # self._gait_config.max_side_speed * speed_command.vel_y,
-        # self._gait_config.max_rot_speed * speed_command.rot_z
+        np.minimum(speed_command.vel_x, self._gait.max_forward_speed),
+        speed_command.vel_y, speed_command.rot_z
     ])
-    smoothed_new_speed = 0.5 * old_speed + 0.5 * new_speed
+    smoothed_new_speed = 0.8 * old_speed + 0.2 * new_speed
 
     desired_lin_speed = (
         smoothed_new_speed[0],

@@ -10,7 +10,7 @@ def get_config():
   config.max_side_speed = 0.7
   config.max_rot_speed = 1.
 
-  config.gait_parameters = [3.0, np.pi, np.pi, 0., 0.5]
+  config.timing_parameters = [3.0, np.pi, np.pi, 0., 0.5]
 
   # MPC-related settings
   config.mpc_foot_friction = 0.45
