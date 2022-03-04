@@ -7,7 +7,7 @@ import numpy as np
 import rospy
 
 from a1_interface.msg import robot_state, speed_command, gait_command
-from simple_gait_optimization.timing_policy.timing_policy import TimingPolicy
+from simple_gait_optimization.timing_policy.manual_timing_policy import ManualTimingPolicy
 
 FLAGS = flags.FLAGS
 
@@ -57,7 +57,7 @@ def main(argv):
                                            gait_command,
                                            queue_size=1)
 
-  policy = TimingPolicy()
+  policy = ManualTimingPolicy()
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
     timing_parameters = policy.get_action(state_listener.current_speed,

@@ -58,7 +58,7 @@ def generate_plot_and_save(args):
   gait_names = ['Crawl', 'Walk', 'Run']
 
   for idx in range(3):
-    color = '#5273ab' if idx != best_gait else '#e32f27'
+    color = '#5273ab' #if idx != best_gait else '#e32f27'
     plt.errorbar([gait_names[idx]],
                  pred_means[idx],
                  yerr=pred_stds[idx],

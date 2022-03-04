@@ -15,7 +15,7 @@ def relu(x):
   return x * (x > 0)
 
 
-class TimingPolicy:
+class LearnedTimingPolicy:
   """Outputs timing commands based on desired and actual speed of the robot."""
   def __init__(self):
     package_path = rospkg.RosPack().get_path('simple_gait_optimization')
@@ -40,7 +40,7 @@ class TimingPolicy:
 
 
 def main(_):
-  policy = TimingPolicy()
+  policy = LearnedTimingPolicy()
   base_vel = np.zeros(3)
   desired_vel = np.zeros(4)
   print(policy.get_action(base_vel, desired_vel))
