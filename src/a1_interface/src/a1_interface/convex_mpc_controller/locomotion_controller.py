@@ -427,8 +427,9 @@ class LocomotionController:
         self._swing_controller.desired_twisting_speed
     ])
     new_speed = np.array([
-        np.clip(speed_command.vel_x, -self._gait.max_forward_speed, self._gait.max_forward_speed),
-        speed_command.vel_y, speed_command.rot_z
+        np.clip(speed_command.vel_x, -self._gait.max_forward_speed,
+                self._gait.max_forward_speed), speed_command.vel_y,
+        speed_command.rot_z
     ])
     smoothed_new_speed = 0.5 * old_speed + 0.5 * new_speed
 

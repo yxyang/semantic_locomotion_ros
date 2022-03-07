@@ -42,6 +42,7 @@ def analyze_individual_file(args):
   image_embeddings = []
   robot_states = pickle.load(open(os.path.join(base_dir, filename), 'rb'))
   for frame in robot_states[:-1]:
+    print(frame.keys())
     foot_phases.append(frame['gait_generator_phase'])
     speed_commands.append(frame['desired_speed'][0])
     steer_commands.append(frame['desired_speed'][1])
