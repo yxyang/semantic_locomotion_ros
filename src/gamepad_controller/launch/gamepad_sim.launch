@@ -1,5 +1,5 @@
 <launch>
   <arg name="show_gui" default="False"/>
   <node pkg="gamepad_controller" type="gamepad_reader.py" name="gamepad_controller" respawn="true"/>
-  <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=$(arg show_gui)" respawn="true"/>
+  <node pkg="a1_interface" type="convex_mpc_controller_example.py" name="convex_mpc_controller" args="--show_gui=$(arg show_gui) --logdir=/home/yxyang/research/semantic_locomotion_ros/logs" respawn="true"/>
 </launch>

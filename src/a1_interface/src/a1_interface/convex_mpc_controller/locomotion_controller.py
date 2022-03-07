@@ -1,6 +1,4 @@
 """A model based controller framework."""
-from datetime import datetime
-from multiprocessing import Process
 import os
 import pickle
 import threading
@@ -17,6 +15,7 @@ import pybullet
 from a1_interface.msg import gait_command
 from a1_interface.msg import controller_mode
 from a1_interface.convex_mpc_controller import com_velocity_estimator
+from a1_interface.convex_mpc_controller import data_logger
 from a1_interface.convex_mpc_controller import offset_gait_generator
 from a1_interface.convex_mpc_controller import raibert_swing_leg_controller
 from a1_interface.convex_mpc_controller import torque_stance_leg_controller_mpc
@@ -82,13 +81,9 @@ class LocomotionController:
     self._last_image_embedding = np.zeros(4)
     self._logs = []
     if logdir:
-      self._logdir = os.path.join(rospkg.get_ros_home(), logdir)
-      if not os.path.exists(self._logdir):
-        os.makedirs(self._logdir)
-      rospy.loginfo("Logging to: {}".format(self._logdir))
+      self._logger = data_logger.DataLogger(logdir=logdir)
     else:
-      rospy.loginfo("Logging disabled.")
-      self._logdir = None
+      self._logger = None
 
     self._mode = controller_mode.DOWN
     self.set_controller_mode(controller_mode(mode=controller_mode.STAND))
@@ -105,8 +100,6 @@ class LocomotionController:
     if start_running_immediately:
       self.run_thread = threading.Thread(target=self.run)
       self.run_thread.start()
-      # Callback timer
-      rospy.Timer(rospy.Duration(1), self._flush_logging)
 
   def setup_pybullet_client(self):
     if self._show_gui and not self._use_real_robot:
@@ -264,17 +257,13 @@ class LocomotionController:
     self._mode = self._desired_mode
     if self._desired_mode == controller_mode.DOWN:
       rospy.loginfo("Entering joint damping mode.")
-      self._flush_logging(None)
+      self._logger.flush_logging()
     elif self._desired_mode == controller_mode.STAND:
       rospy.loginfo("Standing up.")
       self.reset_robot()
     else:
       rospy.loginfo("Walking.")
       self.reset_controllers()
-      self._start_logging()
-
-  def _start_logging(self):
-    self._logs = []
 
   def _update_logging(self, action, qp_sol):
     """Adds latest robot state to logs."""
@@ -304,23 +293,7 @@ class LocomotionController:
         foot_velocities=self._robot.foot_velocities,
         foot_forces=self._robot.foot_forces,
         image_embedding=self._last_image_embedding)
-    if self._logdir:
-      self._logs.append(frame)
-
-  def _flush_logging(self, event):
-    """Flush logging to disk if current log object is too big."""
-    del event  # unused
-    if self._logdir and len(self._logs) > 1000:
-      logs = self._logs
-      self._logs = []
-      filename = 'log_{}.pkl'.format(
-          datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
-      p = Process(target=_dump_data,
-                  args=(logs, os.path.join(self._logdir, filename)))
-      p.start()
-      # pickle.dump(logs, open(os.path.join(self._logdir, filename), 'wb'))
-      rospy.loginfo("Data logged to: {}".format(
-          os.path.join(self._logdir, filename)))
+    self._logger.update_logging(frame)
 
   def _handle_gait_switch(self):
     """Handles gait switch commands and update corresponding controllers."""

@@ -1,6 +1,6 @@
 <launch>
     <include file="$(find gamepad_controller)/launch/gamepad_sim.launch" >
-        <arg name="show_gui" value="false" />
+        <arg name="show_gui" value="true" />
     </include>
     <node pkg="simple_gait_optimization" type="manual_speed_auto_gait.py" name="manual_speed_auto_gait" respawn="true" />
 </launch>
