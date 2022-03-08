@@ -76,7 +76,7 @@ class Gamepad:
     self._mode = next(self._mode_generator)
     self._gait_mode_generator = itertools.cycle([
         GaitMode.MANUAL_SPEED_MANUAL_GAIT, GaitMode.MANUAL_SPEED_AUTO_GAIT,
-        # GaitMode.AUTO_SPEED_AUTO_GAIT
+        GaitMode.AUTO_SPEED_AUTO_GAIT
     ])
     self._gait_mode = next(self._gait_mode_generator)
 
@@ -202,6 +202,10 @@ class Gamepad:
                         base_height=self._manual_gait.desired_body_height,
                         max_forward_speed=self._manual_gait.max_forward_speed,
                         timestamp=rospy.get_rostime())
+
+  @property
+  def vel_scale_x(self):
+    return self._vel_scale_x
 
   def stop(self):
     self.is_running = False

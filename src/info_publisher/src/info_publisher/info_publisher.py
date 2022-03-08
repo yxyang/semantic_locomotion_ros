@@ -12,7 +12,6 @@ from a1_interface.msg import robot_state
 # from a1_interface.msg import speed_command
 
 CONTROLLER_MODE_MAP = {0: "Down", 1: "Stand", 2: "Walk", 3: "Terminate"}
-GAIT_TYPE_MAP = {0: "Slow", 1: "Medium", 2: "Fast"}
 
 
 class RobotStateRecorder:
@@ -23,9 +22,8 @@ class RobotStateRecorder:
     self._robot_state = state
 
   def get_info_string(self):
-    return "Controller: {}\nGait: {}\n".format(
-        CONTROLLER_MODE_MAP[self._robot_state.controller_mode],
-        GAIT_TYPE_MAP[self._robot_state.gait_type])
+    return "Controller: {}\n".format(
+        CONTROLLER_MODE_MAP[self._robot_state.controller_mode])
 
 
 class ControllerStateRecorder:

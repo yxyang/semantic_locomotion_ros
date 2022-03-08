@@ -98,14 +98,15 @@ def main(_):
       desired_gait = gait_command_listener.desired_gait_type
       gait_command_publisher.publish(desired_gait)
       cmd = gamepad.speed_command
-      neutral_throttle = desired_gait.recommended_forward_speed / \
-        desired_gait.max_forward_speed
+      neutral_speed = desired_gait.recommended_forward_speed
+      cmd.vel_x /= gamepad.vel_scale_x
       cmd.vel_x = np.where(
           cmd.vel_x < 0,
           # Brake
-          (cmd.vel_x + 1) * neutral_throttle,
+          (cmd.vel_x + 1) * neutral_speed,
           # Accelerate
-          neutral_throttle + cmd.vel_x * (1 - neutral_throttle))
+          neutral_speed + cmd.vel_x *
+          (desired_gait.max_forward_speed - neutral_speed))
       speed_command_publisher.publish(cmd)
     rate.sleep()
 

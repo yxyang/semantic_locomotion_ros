@@ -14,7 +14,7 @@ import torch
 from perception.configs import rugd_a1
 from perception.models import get_model
 from perception.utils import convert_state_dict, normalize_brightness
-from traversability_model.configs import config_human
+from simple_gait_optimization.configs import config_human
 
 
 def _convert_segmentation_map(raw_segmentation_map):
@@ -39,9 +39,11 @@ class FixedRegionMapper:
         feature_moving_average_window_size)
 
   def _load_pca(self) -> sklearn.decomposition.PCA:
+    """Load PCA training data for dimensionality reduction."""
     rospack = rospkg.RosPack()
-    package_dir = os.path.join(rospack.get_path("traversability_model"), "src")
-    embedding_dir = os.path.join(package_dir, 'traversability_model',
+    package_dir = os.path.join(rospack.get_path("simple_gait_optimization"),
+                               "src")
+    embedding_dir = os.path.join(package_dir, 'simple_gait_optimization',
                                  'saved_models', 'pca_training_data.npz')
     image_embeddings_ckpt = np.load(open(embedding_dir, 'rb'))
     pca = sklearn.decomposition.PCA(
