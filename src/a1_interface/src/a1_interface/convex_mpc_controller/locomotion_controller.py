@@ -92,7 +92,6 @@ class LocomotionController:
         timing_parameters=slow_gait.timing_parameters,
         foot_clearance=slow_gait.foot_clearance_max,
         base_height=slow_gait.desired_body_height,
-        max_forward_speed=slow_gait.max_forward_speed,
         timestamp=rospy.get_rostime())
     self._gait = self._desired_gait
     self._handle_gait_switch()
@@ -400,8 +399,10 @@ class LocomotionController:
         self._swing_controller.desired_twisting_speed
     ])
     new_speed = np.array([
-        np.clip(speed_command.vel_x, -self._gait.max_forward_speed,
-                self._gait.max_forward_speed), speed_command.vel_y,
+        speed_command.vel_x,
+        # np.clip(speed_command.vel_x, -self._gait.max_forward_speed,
+        #         self._gait.max_forward_speed),
+        speed_command.vel_y,
         speed_command.rot_z
     ])
     smoothed_new_speed = 0.5 * old_speed + 0.5 * new_speed

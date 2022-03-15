@@ -10,7 +10,7 @@ import numpy as np
 import rospy
 import torch
 
-from a1_interface.msg import gait_command
+from a1_interface.msg import speed_command
 from perception.msg import image_embedding
 from simple_gait_optimization.timing_policy.manual_gait_policy import ManualGaitPolicy
 
@@ -34,7 +34,7 @@ def convert_to_linear_speed_equivalent(vx, vy, wz):
   return np.sqrt(vx**2 + 4 * vy**2) + np.abs(wz)
 
 
-class GaitPolicy:
+class SpeedPolicy:
   """Records desired and actual speed from subscribed topics."""
   def __init__(self, model):
     self._model = model
@@ -52,7 +52,7 @@ class GaitPolicy:
   def last_embedding(self):
     return self._last_embedding
 
-  def get_desired_speed_and_gait(self):
+  def get_desired_speed(self):
     """Returns desired speed and gait from policy."""
     if self._last_embedding is not None:
       model_inputs = torch.tensor(self._last_embedding).reshape(
@@ -60,12 +60,13 @@ class GaitPolicy:
       pred_mean, pred_std = self._model.forward(model_inputs)
       pred_mean = pred_mean.detach().cpu().numpy()[0][0]
       pred_std = pred_std.detach().cpu().numpy()[0][0]
-      desired_speed = pred_mean - 0.5 * pred_std
+      desired_speed = pred_mean  # - 0.5 * pred_std
     else:
       desired_speed = 0.5
-    gait = self._policy.get_action(desired_speed)
-    gait.recommended_forward_speed = desired_speed
-    return gait
+    return speed_command(vel_x=desired_speed,
+                         vel_y=0,
+                         rot_z=0,
+                         timestamp=rospy.get_rostime())
 
 
 def main(argv):
@@ -84,19 +85,19 @@ def main(argv):
                              dim_hidden=config.model.dim_hidden).to(device)
   model.load_state_dict(ckpt['model'])
 
-  gait_policy = GaitPolicy(model)
+  speed_policy = SpeedPolicy(model)
 
   # Public to / subscribe from topics
   rospy.Subscriber('perception/image_embedding', image_embedding,
-                   gait_policy.record_image_embedding)
-  gait_command_publisher = rospy.Publisher('autogait_command',
-                                           gait_command,
-                                           queue_size=1)
+                   speed_policy.record_image_embedding)
+  speed_command_publisher = rospy.Publisher('autospeed_command',
+                                            speed_command,
+                                            queue_size=1)
 
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
-    desired_gait = gait_policy.get_desired_speed_and_gait()
-    gait_command_publisher.publish(desired_gait)
+    desired_speed = speed_policy.get_desired_speed()
+    speed_command_publisher.publish(desired_speed)
     rate.sleep()
 
 

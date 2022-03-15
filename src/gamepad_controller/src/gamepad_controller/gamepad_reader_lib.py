@@ -200,7 +200,6 @@ class Gamepad:
     return gait_command(timing_parameters=self._manual_gait.timing_parameters,
                         foot_clearance=self._manual_gait.foot_clearance_max,
                         base_height=self._manual_gait.desired_body_height,
-                        max_forward_speed=self._manual_gait.max_forward_speed,
                         timestamp=rospy.get_rostime())
 
   @property

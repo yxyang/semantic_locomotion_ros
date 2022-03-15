@@ -37,13 +37,12 @@ class RobotStateListener:
 
 
 class GaitCommandListener:
-  """Listens and stores gait command."""
+  """Listens and stores auto-gait command."""
   def __init__(self):
     self._desired_gait_type = gait_command(
         timing_parameters=[3.5, np.pi, np.pi, 0, 0.5],
         base_height=0.26,
         foot_clearance=0.13,
-        max_forward_speed=1.6,
         timestamp=rospy.get_rostime())
 
   def callback(self, msg):
@@ -52,6 +51,22 @@ class GaitCommandListener:
   @property
   def desired_gait_type(self):
     return self._desired_gait_type
+
+
+class SpeedCommandListener:
+  """Listens and stores auto-speed command."""
+  def __init__(self):
+    self._desired_speed = speed_command(vel_x=0,
+                                        vel_y=0,
+                                        rot_z=0,
+                                        timestamp=rospy.get_rostime())
+
+  def callback(self, msg):
+    self._desired_speed = msg
+
+  @property
+  def desired_speed(self):
+    return self._desired_speed
 
 
 def main(_):
@@ -72,6 +87,9 @@ def main(_):
   gait_command_listener = GaitCommandListener()
   rospy.Subscriber('autogait_command', gait_command,
                    gait_command_listener.callback)
+  speed_command_listener = SpeedCommandListener()
+  rospy.Subscriber('autospeed_command', speed_command,
+                   speed_command_listener.callback)
 
   gait_command_publisher = rospy.Publisher('gait_command',
                                            gait_command,
@@ -98,7 +116,7 @@ def main(_):
       desired_gait = gait_command_listener.desired_gait_type
       gait_command_publisher.publish(desired_gait)
       cmd = gamepad.speed_command
-      neutral_speed = desired_gait.recommended_forward_speed
+      neutral_speed = speed_command_listener.desired_speed.vel_x
       cmd.vel_x /= gamepad.vel_scale_x
       cmd.vel_x = np.where(
           cmd.vel_x < 0,
@@ -106,7 +124,9 @@ def main(_):
           (cmd.vel_x + 1) * neutral_speed,
           # Accelerate
           neutral_speed + cmd.vel_x *
-          (desired_gait.max_forward_speed - neutral_speed))
+          (gamepad.vel_scale_x - neutral_speed))
+      cmd.vel_y = gamepad.speed_command.vel_y
+      cmd.rot_z = gamepad.speed_command.rot_z
       speed_command_publisher.publish(cmd)
     rate.sleep()
 
