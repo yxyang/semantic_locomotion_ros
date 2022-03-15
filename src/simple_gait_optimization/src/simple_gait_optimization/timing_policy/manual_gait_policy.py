@@ -22,9 +22,10 @@ class ManualGaitPolicy:
     desired_vel = np.clip(desired_vel, 0, self._max_speed)
     step_freq = self._min_freq + (
         self._max_freq - self._min_freq) * desired_vel / self._max_speed
-    return gait_command(timing_parameters=[step_freq, np.pi, np.pi, 0, 0.5],
-                        foot_clearance=0.18 - 0.08 * desired_vel / self._max_speed,
-                        base_height=0.31 - 0.05 * desired_vel / self._max_speed,
-                        max_forward_speed=get_max_forward_speed(step_freq),
-                        recommended_forward_speed=0,
-                        timestamp=rospy.get_rostime())
+    return gait_command(
+        timing_parameters=[step_freq, np.pi, np.pi, 0, 0.5],
+        foot_clearance=0.18 - 0.08 * desired_vel / self._max_speed,
+        base_height=0.31 - 0.05 * desired_vel / self._max_speed,
+        max_forward_speed=get_max_forward_speed(step_freq),
+        recommended_forward_speed=0,
+        timestamp=rospy.get_rostime())

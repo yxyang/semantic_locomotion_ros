@@ -111,7 +111,8 @@ def main(argv):
     list(tqdm(p.imap(generate_plot_and_save, args), total=len(args)))
 
   np.savez(os.path.join(FLAGS.output_dir, 'commands.npz'),
-           speed_choices=pred_mean - pred_std,
+           speed_mean=pred_mean,
+           speed_std=pred_std,
            **vision_data)
 
 

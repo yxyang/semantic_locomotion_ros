@@ -76,7 +76,8 @@ def main(argv):
   config = FLAGS.config
   device = torch.device('cuda') if torch.cuda.is_available() else torch.device(
       'cpu')
-  ckpt = torch.load(os.path.join(FLAGS.model_dir, 'trained_model.pkl'), map_location=device)
+  ckpt = torch.load(os.path.join(FLAGS.model_dir, 'trained_model.pkl'),
+                    map_location=device)
   model = config.model_class(dim_in=config.model.dim_in,
                              dim_out=config.model.dim_out,
                              num_hidden=config.model.num_hidden,
