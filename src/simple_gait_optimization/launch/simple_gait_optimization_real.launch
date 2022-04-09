@@ -1,5 +1,0 @@
-<launch>
-    <include file="$(find gamepad_controller)/launch/gamepad_real.launch" />
-    <node pkg="simple_gait_optimization" type="compute_gait_from_speed.py" name="compute_gait_from_speed" respawn="true" />
-    <node pkg="simple_gait_optimization" type="compute_speed_from_perception.py" name="compute_speed_from_perception" respawn="true" />
-</launch>

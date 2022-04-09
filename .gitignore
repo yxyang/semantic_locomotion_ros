@@ -18,6 +18,7 @@ __pycache__/
 # Training logs
 logs/
 data/
+out/
 out_rgb/
 out_rgb_rainy/
 out_predID/

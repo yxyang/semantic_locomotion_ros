@@ -1,7 +1,0 @@
-<launch>
-  <node pkg="perception" type="realsense_camera_capture.py" name="realsense_camera_capture" respawn="true"/>
-  <node pkg="perception" type="fixed_region_mapper.py" name="fixed_region_mapper" respawn="true"/>
-  <node pkg="info_publisher" type="info_publisher.py" name="info_publisher" respawn="true"/>
-  <node pkg="info_publisher" type="data_logger.py" name="data_logger" respawn="true"/>
-</launch>
-

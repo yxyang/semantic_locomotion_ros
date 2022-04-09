@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+// input image, width, height
+message B64Image {
+    string b64image = 1;
+    int32 width = 2;
+    int32 height = 3;
+    int32 num_channels = 4;
+}
+
+// service
+service SemanticEmbedding {
+    rpc GetSpeedEstimation(B64Image) returns (B64Image) {}
+    rpc GetSemanticSegmentation(B64Image) returns (B64Image) {}
+}

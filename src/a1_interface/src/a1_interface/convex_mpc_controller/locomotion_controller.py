@@ -78,7 +78,6 @@ class LocomotionController:
     self._reset_time = self._clock()
     self._time_since_reset = 0
     self._last_command_timestamp = 0
-    self._last_image_embedding = np.zeros(4)
     self._logs = []
     if logdir:
       self._logger = data_logger.DataLogger(logdir=logdir)
@@ -290,8 +289,7 @@ class LocomotionController:
         ground_orientation=self._state_estimator.
         ground_orientation_world_frame,
         foot_velocities=self._robot.foot_velocities,
-        foot_forces=self._robot.foot_forces,
-        image_embedding=self._last_image_embedding)
+        foot_forces=self._robot.foot_forces)
     self._logger.update_logging(frame)
 
   def _handle_gait_switch(self):
@@ -417,6 +415,3 @@ class LocomotionController:
     self._swing_controller.desired_twisting_speed = desired_rot_speed
     self._stance_controller.desired_speed = desired_lin_speed
     self._stance_controller.desired_twisting_speed = desired_rot_speed
-
-  def set_image_embedding(self, msg):
-    self._last_image_embedding = np.array(msg.embedding)

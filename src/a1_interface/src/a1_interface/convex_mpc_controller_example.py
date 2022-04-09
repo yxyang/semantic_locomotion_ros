@@ -10,7 +10,6 @@ from a1_interface.msg import gait_command
 from a1_interface.msg import robot_state
 from a1_interface.msg import speed_command
 from a1_interface.convex_mpc_controller import locomotion_controller
-from perception.msg import image_embedding
 
 flags.DEFINE_string("logdir", None, "where to log trajectories.")
 flags.DEFINE_bool("use_real_robot", False,
@@ -32,8 +31,6 @@ def main(argv):
   rospy.Subscriber("speed_command", speed_command,
                    controller.set_desired_speed)
   rospy.Subscriber("gait_command", gait_command, controller.set_gait)
-  rospy.Subscriber("perception/image_embedding", image_embedding,
-                   controller.set_image_embedding)
   robot_state_publisher = rospy.Publisher('robot_state',
                                           robot_state,
                                           queue_size=10)
