@@ -94,8 +94,6 @@ def main(argv):
   data_logger = DataLogger(logdir)
   rospy.Subscriber("/perception/camera_image/compressed", CompressedImage,
                    data_logger.record_camera_image)
-  #rospy.Subscriber("/perception/segmentation_map/compressed", CompressedImage,
-  #                 data_logger.record_segmentation)
   rospy.Subscriber("/robot_state", robot_state, data_logger.record_robot_state)
 
   while not rospy.is_shutdown():
