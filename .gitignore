@@ -32,7 +32,9 @@ weights/
 .catkin_workspace
 .Python
 build/
+build_isolated/
 devel/
+devel_isolated/
 develop-eggs/
 dist/
 downloads/

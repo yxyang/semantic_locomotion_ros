@@ -8,7 +8,8 @@ import grpc
 import numpy as np
 import pyrealsense2 as rs
 import rospy
-from sensor_msgs.msg import CompressedImage
+from geometry_msgs.msg import Quaternion
+from sensor_msgs.msg import CompressedImage, Image
 
 from a1_interface.msg import speed_command
 from m1_perception.model_serving import semantic_embedding_service_pb2_grpc
@@ -17,8 +18,9 @@ from m1_perception.speed_model import mask_utils
 
 flags.DEFINE_string('server_addr', '10.211.55.2', 'server address.')
 flags.DEFINE_integer('port', 5005, 'port number.')
-flags.DEFINE_bool('publish_image_topic', True,
-                  'whether to publish camera image as a ros topic.')
+flags.DEFINE_bool(
+    'publish_ros_topic', True,
+    'whether to publish camera image and motion data as a ros topic.')
 FLAGS = flags.FLAGS
 
 
@@ -57,14 +59,23 @@ def main(argv):
   pipeline = rs.pipeline()
   config = rs.config()
   config.enable_stream(rs.stream.color, 424, 240, rs.format.bgr8, 60)
+  config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 15)
   pipeline.start(config)
   mask = mask_utils.get_segmentation_mask(width=424, height=240)
 
-  if FLAGS.publish_image_topic:
+  if FLAGS.publish_ros_topic:
     camera_image_publisher = rospy.Publisher(
-        '/perception/camera_image/compressed', CompressedImage, queue_size=1)
+        '/perception/camera_image_color/compressed',
+        CompressedImage,
+        queue_size=1)
+    depth_image_publisher = rospy.Publisher(
+        '/perception/camera_image_depth',
+        Image,
+        queue_size=1)
     speed_map_publisher = rospy.Publisher(
         '/perception/speed_map_2d/compressed', CompressedImage, queue_size=1)
+    camera_orientation_publisher = rospy.Publisher(
+        '/perception/camera_orientation', Quaternion, queue_size=1)
 
   while not rospy.is_shutdown():
     frames = pipeline.wait_for_frames()
@@ -80,7 +91,24 @@ def main(argv):
                             timestamp=rospy.get_rostime())
     speed_command_publisher.publish(command)
 
-    if FLAGS.publish_image_topic:
+    depth_frame = frames.get_depth_frame()
+    if FLAGS.publish_ros_topic:
+      # msg = CompressedImage()
+      # msg.header.stamp = rospy.Time.now()
+      # msg.format = "png"
+      # msg.data = np.array(
+      #     cv2.imencode(".png",
+      #                  np.array(depth_frame.get_data()))[1]).tostring()
+      msg = Image()
+      msg.header.stamp = rospy.Time.now()
+      msg.header.frame_id = 'camera'
+      msg.height = 480
+      msg.width = 640
+      msg.encoding = 'mono16'
+      # msg.format = "png"
+      msg.data = np.array(depth_frame.get_data()).tostring()
+      depth_image_publisher.publish(msg)
+
       msg = CompressedImage()
       msg.header.stamp = rospy.Time.now()
       msg.format = "png"
@@ -95,6 +123,10 @@ def main(argv):
       speed_map_rgb = convert_to_rgb(response_image)
       msg.data = np.array(cv2.imencode(".png", speed_map_rgb)[1]).tostring()
       speed_map_publisher.publish(msg)
+
+      msg = Quaternion()
+      msg.x, msg.y, msg.z, msg.w = 0, 0, 0, 1
+      camera_orientation_publisher.publish(msg)
 
 
 if __name__ == "__main__":

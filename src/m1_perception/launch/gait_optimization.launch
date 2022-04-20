@@ -6,6 +6,7 @@
     <node pkg="m1_perception" type="compute_speed_from_perception_grpc.py" name="compute_speed_from_perception_grpc" respawn="true" args="--server_addr=localhost" />
     <node pkg="info_publisher" type="data_logger.py" name="data_logger" />
     <node pkg="info_publisher" type="web_server.py" name="web_server" />
+    <node pkg="info_publisher" type="tf_publisher.py" name="tf_publisher" />
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
      <arg name="port" value="9090"/>
     </include>

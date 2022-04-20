@@ -92,7 +92,7 @@ def main(argv):
     os.makedirs(logdir)
 
   data_logger = DataLogger(logdir)
-  rospy.Subscriber("/perception/camera_image/compressed", CompressedImage,
+  rospy.Subscriber("/perception/camera_image_color/compressed", CompressedImage,
                    data_logger.record_camera_image)
   rospy.Subscriber("/robot_state", robot_state, data_logger.record_robot_state)
 
