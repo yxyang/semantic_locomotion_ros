@@ -1,11 +1,7 @@
 <launch>
-    <include file="$(find gamepad_controller)/launch/gamepad_real.launch" >
-    </include>
     <node pkg="m1_perception" type="compute_gait_from_speed.py" name="compute_gait_from_speed" respawn="true" />
-    <node pkg="m1_perception" type="compute_speed_from_perception_grpc.py" name="compute_speed_from_perception_grpc" respawn="true" />
-    <node pkg="info_publisher" type="data_logger.py" name="data_logger" />
-    <node pkg="info_publisher" type="web_server.py" name="web_server" />
-    <node pkg="info_publisher" type="tf_publisher.py" name="tf_publisher" />
+    <node pkg="m1_perception" type="compute_speed_from_perception_grpc.py" name="compute_speed_from_perception_grpc" respawn="true" args="--server_addr=localhost" />
+    <node pkg="info_publisher" type="tf_publisher.py" name="tf_publisher" respawn="true" />
     <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <arg name="align_depth" value="true"/>
         <arg name="color_width" value="424"/>
@@ -26,7 +22,4 @@
         <param name="_world_frame" type="string" value="enu" />
         <remap from="/imu/data_raw" to="/camera/imu"/>
     </node>
-    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
-        <arg name="port" value="9090"/>
-    </include>
 </launch>

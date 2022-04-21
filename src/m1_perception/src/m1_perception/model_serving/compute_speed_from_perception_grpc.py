@@ -6,9 +6,9 @@ from absl import flags
 import cv2
 import grpc
 import numpy as np
-import pyrealsense2 as rs
 import rospy
-from geometry_msgs.msg import Quaternion
+
+import ros_numpy
 from sensor_msgs.msg import CompressedImage, Image
 
 from a1_interface.msg import speed_command
@@ -22,6 +22,36 @@ flags.DEFINE_bool(
     'publish_ros_topic', True,
     'whether to publish camera image and motion data as a ros topic.')
 FLAGS = flags.FLAGS
+
+
+class SpeedMapGenerator:
+  """Generates speed map from camera inputs."""
+  def __init__(self, grpc_stub, speed_command_publisher, speed_map_publisher):
+    self._mask = mask_utils.get_segmentation_mask(width=424, height=240)
+    self._grpc_stub = grpc_stub
+    self._speed_command_publisher = speed_command_publisher
+    self._speed_map_publisher = speed_map_publisher
+
+  def camera_image_callback(self, image_msg):
+    """Computes speed command and speed map from camera image."""
+    image_array = ros_numpy.numpify(image_msg)
+    image_array = image_array.astype(np.float32) / 255.
+    image_request = utils.numpy_array_to_grpc_message(image_array)
+    response = self._grpc_stub.GetSpeedEstimation(image_request)
+    response_image = utils.grpc_message_to_numpy_array(response)[..., 0]
+    desired_speed = np.sum(response_image * self._mask) / np.sum(self._mask)
+    command = speed_command(vel_x=desired_speed,
+                            vel_y=0,
+                            rot_z=0,
+                            timestamp=rospy.get_rostime())
+    self._speed_command_publisher.publish(command)
+    if self._speed_map_publisher:
+      msg = CompressedImage()
+      msg.header.stamp = rospy.Time.now()
+      msg.format = "png"
+      speed_map_rgb = convert_to_rgb(response_image)
+      msg.data = np.array(cv2.imencode(".png", speed_map_rgb)[1]).tostring()
+      self._speed_map_publisher.publish(msg)
 
 
 def convert_to_rgb(speed_map, min_speed=0, max_speed=2):
@@ -56,77 +86,17 @@ def main(argv):
                                   options=options)
   stub = semantic_embedding_service_pb2_grpc.SemanticEmbeddingStub(channel)
 
-  pipeline = rs.pipeline()
-  config = rs.config()
-  config.enable_stream(rs.stream.color, 424, 240, rs.format.bgr8, 60)
-  config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 15)
-  pipeline.start(config)
-  mask = mask_utils.get_segmentation_mask(width=424, height=240)
-
   if FLAGS.publish_ros_topic:
-    camera_image_publisher = rospy.Publisher(
-        '/perception/camera_image_color/compressed',
-        CompressedImage,
-        queue_size=1)
-    depth_image_publisher = rospy.Publisher(
-        '/perception/camera_image_depth',
-        Image,
-        queue_size=1)
     speed_map_publisher = rospy.Publisher(
         '/perception/speed_map_2d/compressed', CompressedImage, queue_size=1)
-    camera_orientation_publisher = rospy.Publisher(
-        '/perception/camera_orientation', Quaternion, queue_size=1)
+  else:
+    speed_map_publisher = None
 
-  while not rospy.is_shutdown():
-    frames = pipeline.wait_for_frames()
-    color_frame = frames.get_color_frame()
-    color_image = np.array(color_frame.get_data()).astype(np.float32) / 255.
-    image_request = utils.numpy_array_to_grpc_message(color_image)
-    response = stub.GetSpeedEstimation(image_request)
-    response_image = utils.grpc_message_to_numpy_array(response)[..., 0]
-    desired_speed = np.sum(response_image * mask) / np.sum(mask)
-    command = speed_command(vel_x=desired_speed,
-                            vel_y=0,
-                            rot_z=0,
-                            timestamp=rospy.get_rostime())
-    speed_command_publisher.publish(command)
-
-    depth_frame = frames.get_depth_frame()
-    if FLAGS.publish_ros_topic:
-      # msg = CompressedImage()
-      # msg.header.stamp = rospy.Time.now()
-      # msg.format = "png"
-      # msg.data = np.array(
-      #     cv2.imencode(".png",
-      #                  np.array(depth_frame.get_data()))[1]).tostring()
-      msg = Image()
-      msg.header.stamp = rospy.Time.now()
-      msg.header.frame_id = 'camera'
-      msg.height = 480
-      msg.width = 640
-      msg.encoding = 'mono16'
-      # msg.format = "png"
-      msg.data = np.array(depth_frame.get_data()).tostring()
-      depth_image_publisher.publish(msg)
-
-      msg = CompressedImage()
-      msg.header.stamp = rospy.Time.now()
-      msg.format = "png"
-      msg.data = np.array(
-          cv2.imencode(".png",
-                       np.array(color_frame.get_data()))[1]).tostring()
-      camera_image_publisher.publish(msg)
-
-      msg = CompressedImage()
-      msg.header.stamp = rospy.Time.now()
-      msg.format = "png"
-      speed_map_rgb = convert_to_rgb(response_image)
-      msg.data = np.array(cv2.imencode(".png", speed_map_rgb)[1]).tostring()
-      speed_map_publisher.publish(msg)
-
-      msg = Quaternion()
-      msg.x, msg.y, msg.z, msg.w = 0, 0, 0, 1
-      camera_orientation_publisher.publish(msg)
+  speed_map_generator = SpeedMapGenerator(stub, speed_command_publisher,
+                                          speed_map_publisher)
+  rospy.Subscriber("/camera/color/image_raw", Image,
+                   speed_map_generator.camera_image_callback)
+  rospy.spin()
 
 
 if __name__ == "__main__":
