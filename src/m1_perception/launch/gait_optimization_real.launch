@@ -16,7 +16,6 @@
         <arg name="color_fps" value="6"/>
         <arg name="enable_gyro" value="true"/>
         <arg name="enable_accel" value="true"/>
-        <arg name="enable_pose" value="true"/>
         <arg name="linear_accel_cov" value="1.0"/>
         <arg name="unite_imu_method" value="linear_interpolation"/>
     </include>
