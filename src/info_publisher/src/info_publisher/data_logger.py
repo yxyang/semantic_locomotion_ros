@@ -10,6 +10,7 @@ from absl import app
 from absl import flags
 
 import cv2
+from cv_bridge import CvBridge
 import numpy as np
 import rospy
 from sensor_msgs.msg import CompressedImage
@@ -33,17 +34,17 @@ class DataLogger:
     self._logdir = logdir
     self._camera_image = None
     self._robot_state = None
+    self._depth_image = None
     self._log_state_publisher = rospy.Publisher('status/data_logger',
                                                 String,
                                                 queue_size=1)
+    self._cv_bridge = CvBridge()
 
   def record_robot_state(self, robot_state_data):
     self._robot_state = robot_state_data
 
   def record_camera_image(self, image):
     """Records camera image and saves related data."""
-    self._camera_image = image
-
     if self._robot_state is None:
       self._log_state_publisher.publish("No Robot State")
       return
@@ -62,16 +63,16 @@ class DataLogger:
 
     full_dir = os.path.join(full_folder,
                             'log_{}_{}.png'.format(filename_postfix, 'camera'))
-    np_arr = np.fromstring(self._camera_image.data, np.uint8)
-    cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    # cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
-    cv2.imwrite(full_dir, cv_image)
+    np_arr = np.fromstring(image.data, np.uint8)
+    self._camera_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    cv2.imwrite(full_dir, self._camera_image)
 
     full_dir = os.path.join(
         full_folder, 'log_{}_{}.pkl'.format(filename_postfix, 'robot_state'))
     pickle.dump(self._robot_state, open(full_dir, 'wb'))
     self._log_state_publisher.publish("Last frame: {}".format(
         datetime.now().strftime('%H:%M:%S')))
+
 
 def delete_old_files(logdir):
   files_list = list(os.listdir(logdir))
@@ -92,7 +93,7 @@ def main(argv):
     os.makedirs(logdir)
 
   data_logger = DataLogger(logdir)
-  rospy.Subscriber("/perception/camera_image_color/compressed", CompressedImage,
+  rospy.Subscriber("/camera/color/image_raw/compressed", CompressedImage,
                    data_logger.record_camera_image)
   rospy.Subscriber("/robot_state", robot_state, data_logger.record_robot_state)
 

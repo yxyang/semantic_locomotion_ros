@@ -1,4 +1,5 @@
 <launch>
+    <node pkg="info_publisher" type="data_logger.py" name="data_logger" />
     <node pkg="m1_perception" type="compute_gait_from_speed.py" name="compute_gait_from_speed" respawn="true" />
     <node pkg="m1_perception" type="compute_speed_from_perception_grpc.py" name="compute_speed_from_perception_grpc" respawn="true" args="--server_addr=localhost" />
     <node pkg="info_publisher" type="tf_publisher.py" name="tf_publisher" respawn="true" />
@@ -14,6 +15,7 @@
         <arg name="enable_accel" value="true"/>
         <arg name="linear_accel_cov" value="1.0"/>
         <arg name="unite_imu_method" value="linear_interpolation"/>
+        <arg name="filters" value="pointcloud"/>
     </include>
     <node pkg="imu_filter_madgwick" type="imu_filter_node" name="ImuFilter">
         <param name="use_mag" type="bool" value="false" />

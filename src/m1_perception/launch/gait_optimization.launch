@@ -18,6 +18,7 @@
         <arg name="enable_gyro" value="true"/>
         <arg name="enable_accel" value="true"/>
         <arg name="linear_accel_cov" value="1.0"/>
+        <arg name="filters" value="pointcloud"/>
         <arg name="unite_imu_method" value="linear_interpolation"/>
     </include>
     <node pkg="imu_filter_madgwick" type="imu_filter_node" name="ImuFilter">
