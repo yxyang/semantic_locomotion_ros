@@ -4,12 +4,11 @@
 from absl import app
 from absl import flags
 
-import cv2
 from cv_bridge import CvBridge
 import geometry_msgs.msg
 from image_geometry import PinholeCameraModel
 import numpy as np
-from sensor_msgs.msg import CameraInfo, CompressedImage, Image, Imu, PointCloud2
+from sensor_msgs.msg import CameraInfo, Image, Imu, PointCloud2
 import ros_numpy
 import rospy
 import tf2_ros
@@ -33,9 +32,8 @@ class TFPublisher:
     self._camera_model.initialized = False
     self._speed_map_array = None
     self._cv_bridge = CvBridge()
-    self._pointcloud_publisher = rospy.Publisher("/speedmap/point_cloud",
-                                                 PointCloud2,
-                                                 queue_size=1)
+    self._pointcloud_publisher = rospy.Publisher(
+        "/perception/speedmap/pointcloud", PointCloud2, queue_size=1)
 
   def robot_state_callback(self, robot_state_data):
     """Publish robot state data to TF."""
@@ -48,6 +46,23 @@ class TFPublisher:
     transform_msg.transform.translation.z = robot_state_data.base_position[2]
     q = robot_state_data.base_orientation_quat_xyzw
     self._robot_orientation_quat_xyzw = q
+    transform_msg.transform.rotation.x = q[0]
+    transform_msg.transform.rotation.y = q[1]
+    transform_msg.transform.rotation.z = q[2]
+    transform_msg.transform.rotation.w = q[3]
+    self.broadcaster.sendTransform(transform_msg)
+
+    transform_msg = geometry_msgs.msg.TransformStamped()
+    transform_msg.header.stamp = robot_state_data.timestamp
+    transform_msg.header.frame_id = "base_link"
+    transform_msg.child_frame_id = "base_footprint"
+    transform_msg.transform.translation.x = 0.
+    transform_msg.transform.translation.y = 0.
+    base_height = robot_state_data.base_position_ground_frame[
+        2]
+    transform_msg.transform.translation.z = -base_height
+    _, q = p.invertTransform(
+        [0, 0, 0], robot_state_data.base_orientation_ground_frame_quat_xyzw)
     transform_msg.transform.rotation.x = q[0]
     transform_msg.transform.rotation.y = q[1]
     transform_msg.transform.rotation.z = q[2]
@@ -118,7 +133,7 @@ class TFPublisher:
     depth_array_mm = np.array(depth_image, dtype=np.float32)  # Depth in mm
     depth_array_m = depth_array_mm / 1000.
     height, width = image.height, image.width
-    image_coord_x, image_coord_y = np.meshgrid(np.arange(height),
+    image_coord_y, image_coord_x = np.meshgrid(np.arange(height),
                                                np.arange(width),
                                                indexing='ij')
     ray_x = (image_coord_x - cx - tx) / fx
@@ -127,23 +142,19 @@ class TFPublisher:
     camera_coord_y = ray_y * depth_array_m
     camera_coord_z = depth_array_m
     if self._speed_map_array is not None:
-      point_cloud_array = np.stack(
-          (camera_coord_x, camera_coord_y, camera_coord_z,
-           self._speed_map_array[..., 0], self._speed_map_array[..., 1],
-           self._speed_map_array[..., 2]),
-          axis=-1).astype(np.float32)
-      dtype = np.dtype([('y', point_cloud_array.dtype),
-                        ('x', point_cloud_array.dtype),
+      point_cloud_array = np.stack((camera_coord_x, camera_coord_y,
+                                    camera_coord_z, self._speed_map_array),
+                                   axis=-1).astype(np.float32)
+      dtype = np.dtype([('x', point_cloud_array.dtype),
+                        ('y', point_cloud_array.dtype),
                         ('z', point_cloud_array.dtype),
-                        ('b', point_cloud_array.dtype),
-                        ('g', point_cloud_array.dtype),
-                        ('r', point_cloud_array.dtype)])
+                        ('speed', point_cloud_array.dtype)])
     else:
       point_cloud_array = np.stack(
           (camera_coord_x, camera_coord_y, camera_coord_z),
           axis=-1).astype(np.float32)
-      dtype = np.dtype([('y', point_cloud_array.dtype),
-                        ('x', point_cloud_array.dtype),
+      dtype = np.dtype([('x', point_cloud_array.dtype),
+                        ('y', point_cloud_array.dtype),
                         ('z', point_cloud_array.dtype)])
     cloud_msg = PointCloud2()
     cloud_msg.header.stamp = image.header.stamp
@@ -163,9 +174,7 @@ class TFPublisher:
     self._pointcloud_publisher.publish(cloud_msg)
 
   def speed_map_callback(self, image):
-    np_arr = np.fromstring(image.data, np.uint8)
-    self._speed_map_array = np.array(cv2.imdecode(np_arr,
-                                                  cv2.IMREAD_COLOR)) / 255.
+    self._speed_map_array = ros_numpy.image.image_to_numpy(image)
 
 
 def main(argv):
@@ -179,7 +188,7 @@ def main(argv):
                    publisher.depth_info_callback)
   rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image,
                    publisher.depth_image_callback)
-  rospy.Subscriber("/perception/speed_map_2d/compressed", CompressedImage,
+  rospy.Subscriber("/perception/speedmap/image_raw", Image,
                    publisher.speed_map_callback)
   rospy.spin()
 

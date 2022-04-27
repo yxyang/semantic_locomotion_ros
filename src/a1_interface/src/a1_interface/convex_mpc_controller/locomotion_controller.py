@@ -24,7 +24,7 @@ from a1_interface.robots import a1
 from a1_interface.robots import a1_robot
 from a1_interface.robots.motors import MotorCommand
 from a1_interface.robots.motors import MotorControlMode
-from a1_interface.worlds import abstract_world, plane_world
+from a1_interface.worlds import abstract_world, slope_world
 
 
 def get_sim_conf():
@@ -55,7 +55,7 @@ class LocomotionController:
       use_real_robot: bool = False,
       show_gui: bool = False,
       logdir: str = 'logs/',
-      world_class: abstract_world.AbstractWorld = plane_world.PlaneWorld,
+      world_class: abstract_world.AbstractWorld = slope_world.SlopeWorld,
       start_running_immediately: bool = True):
     """Initializes the class.
 

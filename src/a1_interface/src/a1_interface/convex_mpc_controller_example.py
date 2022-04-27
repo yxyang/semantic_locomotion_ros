@@ -45,6 +45,10 @@ def main(argv):
         base_position=robot.base_position,
         base_velocity=controller.state_estimator.com_velocity_body_frame,
         base_orientation_quat_xyzw=robot.base_orientation_quat,
+        base_position_ground_frame=controller.state_estimator.
+        com_position_ground_frame,
+        base_orientation_ground_frame_quat_xyzw=controller.state_estimator.
+        com_orientation_quat_ground_frame,
         motor_angles=robot.motor_angles,
         motor_velocities=robot.motor_velocities,
         motor_torques=robot.motor_torques,

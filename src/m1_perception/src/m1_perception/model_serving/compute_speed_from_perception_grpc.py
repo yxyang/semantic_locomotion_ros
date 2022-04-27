@@ -3,13 +3,12 @@
 from absl import app
 from absl import flags
 
-import cv2
 import grpc
 import numpy as np
 import rospy
 
 import ros_numpy
-from sensor_msgs.msg import CompressedImage, Image
+from sensor_msgs.msg import Image
 
 from a1_interface.msg import speed_command
 from m1_perception.model_serving import semantic_embedding_service_pb2_grpc
@@ -46,11 +45,10 @@ class SpeedMapGenerator:
                             timestamp=rospy.get_rostime())
     self._speed_command_publisher.publish(command)
     if self._speed_map_publisher:
-      msg = CompressedImage()
-      msg.header.stamp = rospy.Time.now()
-      msg.format = "png"
-      speed_map_rgb = convert_to_rgb(response_image)
-      msg.data = np.array(cv2.imencode(".png", speed_map_rgb)[1]).tostring()
+      msg = ros_numpy.image.numpy_to_image(response_image.astype(np.float32),
+                                           encoding='32FC1')
+      msg.header.stamp = image_msg.header.stamp
+      msg.header.frame_id = image_msg.header.frame_id
       self._speed_map_publisher.publish(msg)
 
 
@@ -87,8 +85,9 @@ def main(argv):
   stub = semantic_embedding_service_pb2_grpc.SemanticEmbeddingStub(channel)
 
   if FLAGS.publish_ros_topic:
-    speed_map_publisher = rospy.Publisher(
-        '/perception/speed_map_2d/compressed', CompressedImage, queue_size=1)
+    speed_map_publisher = rospy.Publisher('/perception/speedmap/image_raw',
+                                          Image,
+                                          queue_size=1)
   else:
     speed_map_publisher = None
 
