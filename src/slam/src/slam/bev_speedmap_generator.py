@@ -60,6 +60,9 @@ class BEVSpeedMapGenerator:
                  (points_array['z'] >= -self._height_tolerance) &
                  (points_array['z'] <= self._height_tolerance))
     useful_points = points_array[np.where(condition)]
+    if useful_points.shape[0] == 0:
+      rospy.logwarn("No valid pointcloud is found.")
+      return
     speed_sum, x_edges, y_edges = np.histogram2d(
         useful_points['x'],
         useful_points['y'],

@@ -1,6 +1,6 @@
 <launch>
     <include file="$(find gamepad_controller)/launch/gamepad_real.launch" />
-        <node pkg="m1_perception" type="compute_gait_from_speed.py" name="compute_gait_from_speed" respawn="true" />
+    <node pkg="m1_perception" type="compute_gait_from_speed.py" name="compute_gait_from_speed" respawn="true" />
     <node pkg="m1_perception" type="compute_speed_from_perception_grpc.py" name="compute_speed_from_perception_grpc" respawn="true" args="--server_addr=localhost" />
     <node pkg="info_publisher" type="data_logger.py" name="data_logger" />
     <node pkg="info_publisher" type="web_server.py" name="web_server" />
@@ -8,6 +8,10 @@
     <node pkg="topic_tools" type="relay" name="speedmap_repub"
       args="/perception/speedmap/image_raw /camera/color/speedmap" />
     <node pkg="slam" type="bev_speedmap_generator.py" name="bev_speedmap_generator" />
+    <include file="$(find nmea_navsat_driver)/launch/nmea_serial_driver.launch">
+        <arg name="port" value="/dev/ttyACM0"/>
+        <arg name="baud" value="9600"/>
+    </include>
     <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <arg name="align_depth" value="true"/>
         <arg name="color_width" value="424"/>
@@ -31,5 +35,5 @@
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
         <arg name="port" value="9090"/>
     </include>
-    <node pkg="rosbag" type="record" name="rosbag_record" args="-o /home/yxyang/research/semantic_locomotion_ros/logs/bag --split --duration=1m /autogait_command /autospeed_command /camera/aligned_depth_to_color/image_raw/compressedDepth /camera/aligned_depth_to_color/camera_info /camera/color/image_raw/compressed /camera/color/camera_info /imu/data /perception/speedmap/image_raw /perception/speedmap/occupancygrid /speed_command /tf /tf_static" />
+    <node pkg="rosbag" type="record" name="rosbag_record" args="-o /home/yxyang/research/semantic_locomotion_ros/logs/bag --split --duration=1m /autogait_command /autospeed_command /camera/aligned_depth_to_color/image_raw/compressedDepth /camera/aligned_depth_to_color/camera_info /camera/color/image_raw/compressed /camera/color/camera_info /imu/data /perception/speedmap/image_raw /perception/speedmap/occupancygrid /speed_command /tf /tf_static /fix" />
 </launch>
