@@ -9,9 +9,31 @@ import rospy
 from sensor_msgs.msg import PointCloud2
 import tf2_py as tf2
 import tf2_ros
-from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
+
+import pybullet as p
 
 FLAGS = flags.FLAGS
+
+
+def transform_pointcloud(pointcloud_array, transform):
+  """Transform pointcloud array to a new frame."""
+  transform = transform.transform
+  rotation_matrix = p.getMatrixFromQuaternion(
+      (transform.rotation.x, transform.rotation.y, transform.rotation.z,
+       transform.rotation.w))
+  rotation_matrix = np.array(rotation_matrix).reshape((3, 3))
+  translation = np.array([
+      transform.translation.x, transform.translation.y, transform.translation.z
+  ])
+  original_coordinates = np.stack(
+      (pointcloud_array['x'], pointcloud_array['y'], pointcloud_array['z']),
+      axis=-1)  # nx3
+  new_coordinates = rotation_matrix.dot(original_coordinates.T).T + translation
+  ans = pointcloud_array.copy()
+  ans['x'] = new_coordinates[:, 0]
+  ans['y'] = new_coordinates[:, 1]
+  ans['z'] = new_coordinates[:, 2]
+  return ans
 
 
 class BEVSpeedMapGenerator:
@@ -50,19 +72,21 @@ class BEVSpeedMapGenerator:
       rospy.logwarn(ex)
       return
 
-    cloud_ground_frame = do_transform_cloud(msg, trans)
-    points_array = ros_numpy.point_cloud2.pointcloud2_to_array(
-        cloud_ground_frame)
-    condition = ((points_array['x'] >= 0) &
-                 (points_array['x'] <= self._map_length) &
-                 (points_array['y'] >= -self._map_width / 2) &
-                 (points_array['y'] <= self._map_width / 2) &
-                 (points_array['z'] >= -self._height_tolerance) &
-                 (points_array['z'] <= self._height_tolerance))
-    useful_points = points_array[np.where(condition)]
+    points_array_camera_frame = ros_numpy.point_cloud2.pointcloud2_to_array(
+        msg).flatten()
+    points_array_ground_frame = transform_pointcloud(points_array_camera_frame,
+                                                     trans)
+    condition = ((points_array_ground_frame['x'] >= 0) &
+                 (points_array_ground_frame['x'] <= self._map_length) &
+                 (points_array_ground_frame['y'] >= -self._map_width / 2) &
+                 (points_array_ground_frame['y'] <= self._map_width / 2) &
+                 (points_array_ground_frame['z'] >= -self._height_tolerance) &
+                 (points_array_ground_frame['z'] <= self._height_tolerance))
+    useful_points = points_array_ground_frame[np.where(condition)]
     if useful_points.shape[0] == 0:
       rospy.logwarn("No valid pointcloud is found.")
       return
+
     speed_sum, x_edges, y_edges = np.histogram2d(
         useful_points['x'],
         useful_points['y'],
@@ -77,6 +101,7 @@ class BEVSpeedMapGenerator:
         range=[[0, self._map_length],
                [-self._map_width / 2, self._map_width / 2]])
     avg_speed = (speed_sum / (speed_count + 1e-7)).T
+
 
     grid_coord_x, grid_coord_y = np.meshgrid(np.arange(self._num_bins_x),
                                              np.arange(self._num_bins_y),
