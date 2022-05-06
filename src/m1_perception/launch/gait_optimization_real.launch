@@ -1,13 +1,13 @@
 <launch>
     <include file="$(find gamepad_controller)/launch/gamepad_real.launch" />
     <node pkg="m1_perception" type="compute_gait_from_speed.py" name="compute_gait_from_speed" respawn="true" />
-    <node pkg="m1_perception" type="compute_speed_from_perception_grpc.py" name="compute_speed_from_perception_grpc" respawn="true" args="--server_addr=localhost" />
+    <node pkg="m1_perception" type="compute_speed_from_perception_grpc.py" name="compute_speed_from_perception_grpc" respawn="true" />
     <node pkg="info_publisher" type="data_logger.py" name="data_logger" />
     <node pkg="info_publisher" type="web_server.py" name="web_server" />
     <node pkg="info_publisher" type="tf_publisher.py" name="tf_publisher" />
     <node pkg="topic_tools" type="relay" name="speedmap_repub"
       args="/perception/speedmap/image_raw /camera/color/speedmap" />
-    <node pkg="slam" type="bev_speedmap_generator.py" name="bev_speedmap_generator" />
+    <!-- <node pkg="slam" type="bev_speedmap_generator.py" name="bev_speedmap_generator" /> -->
     <include file="$(find nmea_navsat_driver)/launch/nmea_serial_driver.launch">
         <arg name="port" value="/dev/ttyACM0"/>
         <arg name="baud" value="9600"/>

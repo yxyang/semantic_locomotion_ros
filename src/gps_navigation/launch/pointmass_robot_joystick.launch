@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="gamepad_controller" type="gamepad_reader.py" name="gamepad_controller" respawn="true"/>
+  <node pkg="gps_navigation" type="pointmass_robot.py" name="pointmass_robot" respawn="false" args="--gps_anchor_file=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/around_house.npy"/>
+  <node pkg="gps_navigation" type="path_generator.py" name="path_generator" respawn="false" args="--waypoint_file_path=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/around_house.npy"/>
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find gps_navigation)/rviz/pointmass.rviz" />
+</launch>

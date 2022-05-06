@@ -206,5 +206,9 @@ class Gamepad:
   def vel_scale_x(self):
     return self._vel_scale_x
 
+  @property
+  def vel_scale_y(self):
+    return self._vel_scale_y
+
   def stop(self):
     self.is_running = False
