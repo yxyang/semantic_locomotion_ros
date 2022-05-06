@@ -14,29 +14,29 @@ from a1_interface.msg import speed_command
 
 flags.DEFINE_float('control_timestep', 0.02, 'the control timestep.')
 flags.DEFINE_string('gps_anchor_file', None, 'path to gps anchor coordinates.')
+flags.DEFINE_bool('use_emulated_gps', True, 'whether to use emulated gps.')
 FLAGS = flags.FLAGS
 
 
 class PointmassRobot:
   """A simple pointmass robot."""
-  def __init__(self, dt=0.002, use_emulated_gps=True):
+  def __init__(self, dt=0.002):
     self._px, self._py, self._heading = 0., 0., 0.
     self._vx, self._vy, self._rot_z = 0., 0., 0.
     self._dt = dt
     self._tf_broadcaster = tf2_ros.TransformBroadcaster()
-    self._use_emulated_gps = use_emulated_gps
     self._gps_publisher = rospy.Publisher('/fix', NavSatFix, queue_size=1)
     self._gps_anchor_world_frame = None
-    self._gps_anchor_lat_long = None
+    self._gps_anchor_lat_lon = None
 
-  def receive_speed_command(self, command):
+  def speed_command_callback(self, command):
     self._vx = command.vel_x
     self._vy = command.vel_y
     self._rot_z = command.rot_z
 
   def update_gps_anchor(self, latitude, longitude):
     self._gps_anchor_world_frame = [self._px, self._py]
-    self._gps_anchor_lat_long = [latitude, longitude]
+    self._gps_anchor_lat_lon = [latitude, longitude]
 
   def step_simulation(self):
     """Simulate the pointmass robot from joystick commands."""
@@ -48,8 +48,7 @@ class PointmassRobot:
     self._py += vy_world_frame * self._dt
     self._heading += self._rot_z * self._dt
     self._broadcast_tf()
-    if self._use_emulated_gps:
-      self._broadcast_gps()
+    self._broadcast_gps()
 
   def _broadcast_tf(self):
     """Broadcast TF transforms."""
@@ -77,8 +76,8 @@ class PointmassRobot:
     angle_gps_rad = np.mod(-angle_world_rad + np.pi / 2, 2 * np.pi)
     azi1 = angle_gps_rad / np.pi * 180
 
-    new_coord = Geodesic.WGS84.Direct(lat1=self._gps_anchor_lat_long[0],
-                                      lon1=self._gps_anchor_lat_long[1],
+    new_coord = Geodesic.WGS84.Direct(lat1=self._gps_anchor_lat_lon[0],
+                                      lon1=self._gps_anchor_lat_lon[1],
                                       azi1=azi1,
                                       s12=s12)
     fix = NavSatFix()
@@ -90,24 +89,40 @@ class PointmassRobot:
     fix.longitude = new_coord['lon2']
     self._gps_publisher.publish(fix)
 
+  def gps_fix_callback(self, fix):
+    """Update path from GPS fix message."""
+    base_lat, base_lon = fix.latitude, fix.longitude
+    transform = Geodesic.WGS84.Inverse(self._gps_anchor_lat_lon[0],
+                                       self._gps_anchor_lat_lon[1], base_lat,
+                                       base_lon)
+    distance = transform['s12']
+    angle_gps_deg = transform['azi1']
+    angle_gps_rad = angle_gps_deg / 180 * np.pi  # To radians
+    # Original angle: clockwise from north
+    # Need to convert to: counterclockwise from east
+    angle_world_rad = -angle_gps_rad + np.pi / 2
+    self._px = distance * np.cos(angle_world_rad)
+    self._py = distance * np.sin(angle_world_rad)
+    self._broadcast_tf()
+
 
 def main(argv):
   del argv  # unused
   rospy.init_node("pointmass_robot", anonymous=True)
 
-  if FLAGS.gps_anchor_file is not None:
-    waypoints_file = np.load(open(FLAGS.gps_anchor_file, 'rb'))
-    robot = PointmassRobot(FLAGS.control_timestep, use_emulated_gps=True)
-    robot.update_gps_anchor(waypoints_file[0, 0], waypoints_file[0, 1])
+  waypoints_file = np.load(open(FLAGS.gps_anchor_file, 'rb'))
+  robot = PointmassRobot(FLAGS.control_timestep)
+  robot.update_gps_anchor(waypoints_file[0, 0], waypoints_file[0, 1])
+  if FLAGS.use_emulated_gps:
+    rospy.Subscriber("speed_command", speed_command,
+                     robot.speed_command_callback)
+    rate = rospy.Rate(1 / FLAGS.control_timestep)
+    while not rospy.is_shutdown():
+      robot.step_simulation()
+      rate.sleep()
   else:
-    robot = PointmassRobot(FLAGS.control_timestep, use_emulated_gps=False)
-
-  rospy.Subscriber("speed_command", speed_command, robot.receive_speed_command)
-
-  rate = rospy.Rate(1 / FLAGS.control_timestep)
-  while not rospy.is_shutdown():
-    robot.step_simulation()
-    rate.sleep()
+    rospy.Subscriber('/fix', NavSatFix, robot.gps_fix_callback)
+    rospy.spin()
 
 
 if __name__ == "__main__":
