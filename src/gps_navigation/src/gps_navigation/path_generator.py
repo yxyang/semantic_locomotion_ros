@@ -3,12 +3,15 @@
 from absl import app
 from absl import flags
 
+import cv2
+from geographiclib.geodesic import Geodesic
 from geometry_msgs.msg import PoseStamped
+import matplotlib
+import matplotlib.pyplot as plt
 from nav_msgs.msg import Path
 import numpy as np
-from geographiclib.geodesic import Geodesic
 import rospy
-from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import CompressedImage, NavSatFix
 from tf.transformations import euler_from_quaternion
 import tf2_py as tf2
 import tf2_ros
@@ -24,13 +27,19 @@ def compute_distance(lat1, lon1, lat2, lon2):
 
 class PathGenerator:
   """Generates path from GPS waypoints."""
-  def __init__(self, waypoints, checkpoint_reach_tolerance=1):
+  def __init__(self, waypoints, checkpoint_reach_tolerance=2):
     self._waypoints = waypoints
-    self._path_publisher = rospy.Publisher('/path', Path, queue_size=1)
+    self._path_publisher = rospy.Publisher('/navigation/path',
+                                           Path,
+                                           queue_size=1)
 
     self._tf_buffer = tf2_ros.Buffer()
     self._tf_listener = tf2_ros.TransformListener(self._tf_buffer)
     self._checkpoint_reach_tolerance = checkpoint_reach_tolerance
+    self._waypoints_cartesian = None
+    self._bev_map_publisher = rospy.Publisher('/navigation/map/compressed',
+                                              CompressedImage,
+                                              queue_size=1)
 
   def gps_fix_callback(self, fix):
     """Update path from GPS fix message."""
@@ -65,7 +74,7 @@ class PathGenerator:
     path = Path()
     path.header.stamp = rospy.get_rostime()
     path.header.frame_id = 'base_link'
-    waypoints = []
+    waypoints, waypoints_cartesian = [], []
     for gps_waypoint in self._waypoints:
       lat, lon = gps_waypoint
       transform = Geodesic.WGS84.Inverse(base_lat, base_lon, lat, lon)
@@ -89,18 +98,47 @@ class PathGenerator:
       waypoint.pose.orientation.z = 0
       waypoint.pose.orientation.w = 1
       waypoints.append(waypoint)
+      waypoints_cartesian.append((point_x, point_y))
 
+    self._waypoints_cartesian = np.array(waypoints_cartesian)
     path.poses = waypoints
     self._path_publisher.publish(path)
+
+  def generate_2d_visualization(self):
+    """Generates BEV path map for visualization."""
+    if self._waypoints_cartesian is None:
+      return
+    fig = plt.figure(figsize=(4, 4))
+    plt.axis('off')
+    plt.plot(self._waypoints_cartesian[:, 0], self._waypoints_cartesian[:, 1])
+
+    plt.scatter([0], [0])
+    plt.axis('equal')
+    fig.canvas.draw()
+    image_array = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    image_array = image_array.reshape(fig.canvas.get_width_height()[::-1] +
+                                      (3,))
+    msg = CompressedImage()
+    msg.header.stamp = rospy.Time.now()
+    msg.format = "png"
+    msg.data = np.array(cv2.imencode(".png", image_array)[1]).tobytes()
+    self._bev_map_publisher.publish(msg)
 
 
 def main(argv):
   del argv  # unused
+  matplotlib.use('Agg')
+  plt.ioff()
+
   rospy.init_node('path_generator', anonymous=True)
   waypoints = np.load(open(FLAGS.waypoint_file_path, 'rb'))
   path_generator = PathGenerator(waypoints)
   rospy.Subscriber('/fix', NavSatFix, path_generator.gps_fix_callback)
-  rospy.spin()
+
+  rate = rospy.Rate(1)
+  while not rospy.is_shutdown():
+    path_generator.generate_2d_visualization()
+    rate.sleep()
 
 
 if __name__ == "__main__":
