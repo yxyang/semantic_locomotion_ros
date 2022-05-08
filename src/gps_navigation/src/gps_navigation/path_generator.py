@@ -50,16 +50,18 @@ class PathGenerator:
     if fix.status.status == fix.status.STATUS_NO_FIX:
       return
     # Remove checkpoints that have already been reached.
-    while (self._waypoints.shape[0] > 0):
-      distance = compute_distance(self._waypoints[0, 0], self._waypoints[0, 1], fix.latitude,
-        fix.longitude) 
+    while self._waypoints.shape[0] > 0:
+      distance = compute_distance(self._waypoints[0, 0], self._waypoints[0, 1],
+                                  fix.latitude, fix.longitude)
       if distance >= self._checkpoint_reach_tolerance:
         break
       self._waypoints = self._waypoints[1:]
 
     if self._waypoints.shape[0] == 0:
       return
-    self._distance_publisher.publish("Distance to next waypoint: {}".format(distance))
+
+    self._distance_publisher.publish(
+        "Distance to next waypoint: {}".format(distance))
 
     # Get robot transform since we publish in robot frame
     try:
@@ -120,7 +122,9 @@ class PathGenerator:
     fig = plt.figure(figsize=(4, 4))
     plt.axis('off')
     plt.plot(self._waypoints_cartesian[:, 0], self._waypoints_cartesian[:, 1])
-
+    plt.scatter(self._waypoints_cartesian[:1, 0],
+                self._waypoints_cartesian[:1, 1],
+                color='red')
     plt.scatter([0], [0])
     plt.axis('equal')
     fig.canvas.draw()
