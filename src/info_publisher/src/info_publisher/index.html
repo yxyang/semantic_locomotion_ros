@@ -27,13 +27,13 @@
   // Subscribing to a Topic
   var listener = new ROSLIB.Topic({
     ros : ros,
-    name : '/rosout',
+    name : '/status/distance_to_waypoint',
     messageType : 'std_msgs/String'
   });
 
   listener.subscribe(function(message) {
-    console.log('Received message on ' + listener.name + ': ' + message.data);
-    listener.unsubscribe();
+    document.getElementById('distance_to_waypoint').innerHTML = message.data;
+    // console.log('Received message on ' + listener.name + ': ' + message.data);
   });
 
   var camera_image_topic = new ROSLIB.Topic({
@@ -70,6 +70,7 @@
   <p>Check Web Console for Debug Info.</p>
   <img id="camera_image" style='height: 49%; width: 49%; object-fit: contain' src="assets/img/placeholder.png">
   <img id="speed_map" style='height: 49%; width: 49%; object-fit: contain' src="assets/img/placeholder.png">
+  <p id="distance_to_waypoint">Distance to waypoint: unknown.</p>
   <img id="nav_map" style='height: 49%; width: 49%; object-fit: contain' src="assets/img/placeholder.png">
 </body>
 </html>

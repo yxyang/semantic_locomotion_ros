@@ -91,6 +91,8 @@ class PointmassRobot:
 
   def gps_fix_callback(self, fix):
     """Update path from GPS fix message."""
+    if fix.status.status == fix.status.STATUS_NO_FIX:
+      return
     base_lat, base_lon = fix.latitude, fix.longitude
     transform = Geodesic.WGS84.Inverse(self._gps_anchor_lat_lon[0],
                                        self._gps_anchor_lat_lon[1], base_lat,

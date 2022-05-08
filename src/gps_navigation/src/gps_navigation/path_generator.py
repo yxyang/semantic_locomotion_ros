@@ -12,6 +12,7 @@ from nav_msgs.msg import Path
 import numpy as np
 import rospy
 from sensor_msgs.msg import CompressedImage, NavSatFix
+from std_msgs.msg import String
 from tf.transformations import euler_from_quaternion
 import tf2_py as tf2
 import tf2_ros
@@ -27,7 +28,7 @@ def compute_distance(lat1, lon1, lat2, lon2):
 
 class PathGenerator:
   """Generates path from GPS waypoints."""
-  def __init__(self, waypoints, checkpoint_reach_tolerance=2):
+  def __init__(self, waypoints, checkpoint_reach_tolerance=4):
     self._waypoints = waypoints
     self._path_publisher = rospy.Publisher('/navigation/path',
                                            Path,
@@ -40,17 +41,25 @@ class PathGenerator:
     self._bev_map_publisher = rospy.Publisher('/navigation/map/compressed',
                                               CompressedImage,
                                               queue_size=1)
+    self._distance_publisher = rospy.Publisher('/status/distance_to_waypoint',
+                                               String,
+                                               queue_size=1)
 
   def gps_fix_callback(self, fix):
     """Update path from GPS fix message."""
+    if fix.status.status == fix.status.STATUS_NO_FIX:
+      return
     # Remove checkpoints that have already been reached.
-    while (self._waypoints.shape[0] > 0) and (compute_distance(
-        self._waypoints[0, 0], self._waypoints[0, 1], fix.latitude,
-        fix.longitude) < self._checkpoint_reach_tolerance):
+    while (self._waypoints.shape[0] > 0):
+      distance = compute_distance(self._waypoints[0, 0], self._waypoints[0, 1], fix.latitude,
+        fix.longitude) 
+      if distance >= self._checkpoint_reach_tolerance:
+        break
       self._waypoints = self._waypoints[1:]
 
     if self._waypoints.shape[0] == 0:
       return
+    self._distance_publisher.publish("Distance to next waypoint: {}".format(distance))
 
     # Get robot transform since we publish in robot frame
     try:
