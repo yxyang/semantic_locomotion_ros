@@ -12,4 +12,5 @@
   </include>
   <node pkg="tf" type="static_transform_publisher" name="gps_broadcaster" args="0 0 0 0 0 0 1 base_link gps 100" />
   <node pkg="info_publisher" type="web_server.py" name="web_server" />
+  <node pkg="rosbag" type="record" name="rosbag_record" args="-o /home/yxyang/research/semantic_locomotion_ros/logs/bag --split --duration=1m -a" />
 </launch>
