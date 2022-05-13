@@ -4,7 +4,7 @@
   <node pkg="gps_navigation" type="path_generator.py" name="path_generator" respawn="false" args="--waypoint_file_path=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/around_lawn.npy"/>
   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find gps_navigation)/rviz/pointmass.rviz" />
   <include file="$(find nmea_navsat_driver)/launch/nmea_serial_driver.launch">
-    <arg name="port" value="/dev/rfcomm0"/>
+    <arg name="port" value="/dev/ttyACM0"/>
     <arg name="baud" value="38400"/>
   </include>
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
