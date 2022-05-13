@@ -276,7 +276,7 @@ class LocomotionController:
         com_orientation_quat_ground_frame,
         base_rpy=self._robot.base_orientation_rpy,
         motor_angles=self._robot.motor_angles,
-        base_vel=self._robot.motor_velocities,
+        base_vel=self._robot.base_velocity,
         base_vels_body_frame=self._state_estimator.com_velocity_body_frame,
         base_rpy_rate=self._robot.base_rpy_rate,
         motor_vels=self._robot.motor_velocities,
