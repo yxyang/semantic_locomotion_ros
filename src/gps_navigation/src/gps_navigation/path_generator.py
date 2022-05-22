@@ -136,6 +136,7 @@ class PathGenerator:
     msg.format = "png"
     msg.data = np.array(cv2.imencode(".png", image_array)[1]).tobytes()
     self._bev_map_publisher.publish(msg)
+    plt.close(fig)
 
 
 def main(argv):
