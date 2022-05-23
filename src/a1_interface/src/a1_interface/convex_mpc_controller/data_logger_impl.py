@@ -29,7 +29,8 @@ class DataLoggerImpl:
     self._buffer = []
     filename = 'log_{}.pkl'.format(
         datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
-    pickle.dump(logs, open(os.path.join(self._logdir, filename), 'wb'))
+    with open(os.path.join(self._logdir, filename), 'wb') as f:
+      pickle.dump(logs, f)
     rospy.loginfo("Data logged to: {}".format(
         os.path.join(self._logdir, filename)))
 
