@@ -1,4 +1,5 @@
 """A model based controller framework."""
+import datetime
 import os
 import pickle
 import threading
@@ -255,7 +256,6 @@ class LocomotionController:
     self._mode = self._desired_mode
     if self._desired_mode == controller_mode.DOWN:
       rospy.loginfo("Entering joint damping mode.")
-      self._logger.flush_logging()
     elif self._desired_mode == controller_mode.STAND:
       rospy.loginfo("Standing up.")
       self.reset_robot()
@@ -269,7 +269,7 @@ class LocomotionController:
         desired_speed=(self._swing_controller.desired_speed,
                        self._swing_controller.desired_twisting_speed),
         gait_command=self._gait,
-        timestamp=self._time_since_reset,
+        timestamp=datetime.now(),
         base_position_ground_frame=self._state_estimator.
         com_position_ground_frame,
         base_quat_ground_frame=self._state_estimator.
