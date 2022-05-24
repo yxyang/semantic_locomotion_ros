@@ -19,8 +19,8 @@ class DataLoggerImpl:
 
   def update_logging(self, new_frame):
     self._buffer.append(new_frame)
-    if (self._buffer[-1]['timestamp'] -
-        self._buffer[0]['timestamp']) > self._log_flush_seconds:
+    if (self._buffer[-1]['timestamp'] - self._buffer[0]['timestamp']
+        ).total_seconds() > self._log_flush_seconds:
       self.flush_logging()
 
   def flush_logging(self):
