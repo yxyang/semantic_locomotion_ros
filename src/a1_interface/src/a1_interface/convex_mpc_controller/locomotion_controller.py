@@ -1,5 +1,5 @@
 """A model based controller framework."""
-import datetime
+from datetime import datetime
 import os
 import pickle
 import threading
