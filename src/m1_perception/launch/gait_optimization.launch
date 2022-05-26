@@ -1,6 +1,6 @@
 <launch>
     <include file="$(find gamepad_controller)/launch/gamepad_sim.launch" >
-        <arg name="show_gui" value="true" />
+        <arg name="show_gui" value="false" />
     </include>
     <node pkg="m1_perception" type="compute_gait_from_speed.py" name="compute_gait_from_speed" respawn="true" />
     <node pkg="m1_perception" type="compute_speed_from_perception_grpc.py" name="compute_speed_from_perception_grpc" respawn="true" args="--server_addr=localhost" />
