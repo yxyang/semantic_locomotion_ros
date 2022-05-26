@@ -3,10 +3,11 @@
 from absl import app
 from absl import flags
 
+import cv2
 import numpy as np
 import ros_numpy
 import rospy
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import CompressedImage, PointCloud2
 import tf2_py as tf2
 import tf2_ros
 
@@ -56,7 +57,11 @@ class BEVSpeedMapGenerator:
     self._tf_buffer = tf2_ros.Buffer()
     self._tf_listener = tf2_ros.TransformListener(self._tf_buffer)
     self._occupancy_grid_publisher = rospy.Publisher(
-        "/perception/speedmap/occupancygrid", PointCloud2, queue_size=1)
+        "/perception/bev_speedmap/occupancygrid", PointCloud2, queue_size=1)
+    self._image_publisher = rospy.Publisher(
+        "/perception/bev_speedmap/image/compressed",
+        CompressedImage,
+        queue_size=1)
 
   def speedmap_pointcloud_callback(self, msg):
     """Converts from BEV speedcloud to BEV speedmap."""
@@ -102,6 +107,12 @@ class BEVSpeedMapGenerator:
                [-self._map_width / 2, self._map_width / 2]])
     avg_speed = (speed_sum / (speed_count + 1e-7)).T
 
+    msg = CompressedImage()
+    msg.header.stamp = rospy.Time.now()
+    msg.format = "png"
+    msg.data = np.array(cv2.imencode(".png",
+                                     convert_to_rgb(avg_speed))[1]).tobytes()
+    self._image_publisher.publish(msg)
 
     grid_coord_x, grid_coord_y = np.meshgrid(np.arange(self._num_bins_x),
                                              np.arange(self._num_bins_y),
@@ -128,12 +139,31 @@ class BEVSpeedMapGenerator:
     self._occupancy_grid_publisher.publish(cloud_msg)
 
 
+def convert_to_rgb(speed_map, min_speed=0, max_speed=2):
+  """Converts a HxW speedmap into HxWx3 RGB image for visualization."""
+  speed_map = np.clip(speed_map, min_speed, max_speed)
+  # Interpolate between 0 and 1
+  speed_map = (speed_map - min_speed) / (max_speed - min_speed)
+  slow_color = np.array([0, 0, 255.])
+  fast_color = np.array([0, 255., 0])
+
+  channels = []
+  for channel_id in range(3):
+    channel_value = slow_color[channel_id] * (
+        1 - speed_map) + fast_color[channel_id] * speed_map
+    channels.append(channel_value)
+
+  return np.stack(channels, axis=-1)
+
+
 def main(argv):
   del argv  # unused
   rospy.init_node('bev_speedmap_generator', anonymous=True)
   speedmap_generator = BEVSpeedMapGenerator(height_tolerance=1,
                                             resolution=0.05)
   rospy.Subscriber('/perception/speedmap/pointcloud', PointCloud2,
+                   speedmap_generator.speedmap_pointcloud_callback)
+  rospy.Subscriber('/perception/speedmap/image', CompressedImage,
                    speedmap_generator.speedmap_pointcloud_callback)
   rospy.spin()
 

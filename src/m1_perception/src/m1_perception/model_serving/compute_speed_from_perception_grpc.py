@@ -3,12 +3,13 @@
 from absl import app
 from absl import flags
 
+import cv2
 import grpc
 import numpy as np
 import rospy
 
 import ros_numpy
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage, Image
 
 from a1_interface.msg import speed_command
 from m1_perception.model_serving import semantic_embedding_service_pb2_grpc
@@ -17,19 +18,23 @@ from m1_perception.speed_model import mask_utils
 
 flags.DEFINE_string('server_addr', '10.211.55.2', 'server address.')
 flags.DEFINE_integer('port', 5005, 'port number.')
-flags.DEFINE_bool(
-    'publish_ros_topic', True,
-    'whether to publish camera image and motion data as a ros topic.')
 FLAGS = flags.FLAGS
 
 
 class SpeedMapGenerator:
   """Generates speed map from camera inputs."""
-  def __init__(self, grpc_stub, speed_command_publisher, speed_map_publisher):
+  def __init__(self, grpc_stub):
     self._mask = mask_utils.get_segmentation_mask(width=424, height=240)
     self._grpc_stub = grpc_stub
-    self._speed_command_publisher = speed_command_publisher
-    self._speed_map_publisher = speed_map_publisher
+    self._speed_command_publisher = rospy.Publisher('autospeed_command',
+                                                    speed_command,
+                                                    queue_size=1)
+    self._speed_map_publisher = rospy.Publisher(
+        '/perception/speedmap/image_raw', Image, queue_size=1)
+    self._speed_visualization_publisher = rospy.Publisher(
+        '/perception/speedmap/visualization/compressed',
+        CompressedImage,
+        queue_size=1)
 
   def camera_image_callback(self, image_msg):
     """Computes speed command and speed map from camera image."""
@@ -44,12 +49,18 @@ class SpeedMapGenerator:
                             rot_z=0,
                             timestamp=rospy.get_rostime())
     self._speed_command_publisher.publish(command)
-    if self._speed_map_publisher:
-      msg = ros_numpy.image.numpy_to_image(response_image.astype(np.float32),
-                                           encoding='32FC1')
-      msg.header.stamp = image_msg.header.stamp
-      msg.header.frame_id = image_msg.header.frame_id
-      self._speed_map_publisher.publish(msg)
+    msg = ros_numpy.image.numpy_to_image(response_image.astype(np.float32),
+                                         encoding='32FC1')
+    msg.header.stamp = image_msg.header.stamp
+    msg.header.frame_id = image_msg.header.frame_id
+    self._speed_map_publisher.publish(msg)
+
+    msg = CompressedImage()
+    msg.header.stamp = rospy.Time.now()
+    msg.format = "png"
+    msg.data = np.array(
+        cv2.imencode(".png", convert_to_rgb(response_image))[1]).tobytes()
+    self._speed_visualization_publisher.publish(msg)
 
 
 def convert_to_rgb(speed_map, min_speed=0, max_speed=2):
@@ -72,10 +83,6 @@ def convert_to_rgb(speed_map, min_speed=0, max_speed=2):
 def main(argv):
   del argv  # unused
   rospy.init_node('speed_from_perception', anonymous=True)
-  speed_command_publisher = rospy.Publisher('autospeed_command',
-                                            speed_command,
-                                            queue_size=1)
-
   # GRPC Settings
   options = [('grpc.max_send_message_length', 5 * 1024 * 1024),
              ('grpc.max_receive_message_length', 5 * 1024 * 1024)]
@@ -83,16 +90,7 @@ def main(argv):
                                                  FLAGS.port),
                                   options=options)
   stub = semantic_embedding_service_pb2_grpc.SemanticEmbeddingStub(channel)
-
-  if FLAGS.publish_ros_topic:
-    speed_map_publisher = rospy.Publisher('/perception/speedmap/image_raw',
-                                          Image,
-                                          queue_size=1)
-  else:
-    speed_map_publisher = None
-
-  speed_map_generator = SpeedMapGenerator(stub, speed_command_publisher,
-                                          speed_map_publisher)
+  speed_map_generator = SpeedMapGenerator(stub)
   rospy.Subscriber("/camera/color/image_raw", Image,
                    speed_map_generator.camera_image_callback)
   rospy.spin()
