@@ -25,7 +25,7 @@
         <arg name="enable_gyro" value="true"/>
         <arg name="enable_accel" value="true"/>
         <arg name="linear_accel_cov" value="1.0"/>
-        <arg name="filters" value="pointcloud"/>
+        <!-- <arg name="filters" value="pointcloud"/> -->
         <arg name="unite_imu_method" value="linear_interpolation"/>
     </include>
     <node pkg="imu_filter_madgwick" type="imu_filter_node" name="ImuFilter">
@@ -38,5 +38,5 @@
         <arg name="port" value="9090"/>
     </include>
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find m1_perception)/rviz/default.rviz" />
-    <node pkg="rosbag" type="record" name="rosbag_record" args="-o /home/yxyang/research/semantic_locomotion_ros/logs/bag --split --duration=1m /autogait_command /autospeed_command /camera/aligned_depth_to_color/image_raw/compressedDepth /camera/aligned_depth_to_color/camera_info /camera/color/image_raw/compressed /camera/color/camera_info /imu/data /perception/speedmap/image_raw /perception/speedmap/occupancygrid /speed_command /tf /tf_static /fix" />
+<!--     <node pkg="rosbag" type="record" name="rosbag_record" args="-o /home/yxyang/research/semantic_locomotion_ros/logs/bag --split --duration=1m /autogait_command /autospeed_command /camera/aligned_depth_to_color/image_raw/compressedDepth /camera/aligned_depth_to_color/camera_info /camera/color/image_raw/compressed /camera/color/camera_info /imu/data /perception/speedmap/image_raw /perception/speedmap/occupancygrid /speed_command /tf /tf_static /fix" /> -->
 </launch>
