@@ -10,7 +10,7 @@
     <!-- <node pkg="slam" type="bev_speedmap_generator.py" name="bev_speedmap_generator" /> -->
     <include file="$(find nmea_navsat_driver)/launch/nmea_serial_driver.launch">
         <arg name="port" value="/dev/ttyACM0"/>
-        <arg name="baud" value="9600"/>
+        <arg name="baud" value="38400"/>
     </include>
     <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <arg name="align_depth" value="true"/>
