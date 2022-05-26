@@ -8,7 +8,7 @@ from cv_bridge import CvBridge
 import geometry_msgs.msg
 from image_geometry import PinholeCameraModel
 import numpy as np
-from sensor_msgs.msg import CameraInfo, Image, PointCloud2
+from sensor_msgs.msg import CameraInfo, Image, Imu, PointCloud2
 import ros_numpy
 import rospy
 import tf2_ros
@@ -20,7 +20,7 @@ from a1_interface.msg import robot_state
 FLAGS = flags.FLAGS
 
 CAMERA_POSITION_ROBOT_FRAME = [0.24, 0, 0]
-CAMERA_ORIENTATION_TRANFORM_QUAT = [0.5, -0.5, 0.5, -0.5]#[0.5, -0.5, 0.5, 0.5]
+CAMERA_ORIENTATION_TRANFORM_QUAT = [0.5, -0.5, 0.5, 0.5]
 
 
 class TFPublisher:
@@ -69,64 +69,64 @@ class TFPublisher:
     transform_msg.transform.rotation.w = q[3]
     self.broadcaster.sendTransform(transform_msg)
 
+    # transform_msg = geometry_msgs.msg.TransformStamped()
+    # transform_msg.header.stamp = robot_state_data.timestamp
+    # transform_msg.header.frame_id = "base_link"
+    # transform_msg.child_frame_id = "camera_link"
+    # transform_msg.transform.translation.x = CAMERA_POSITION_ROBOT_FRAME[0]
+    # transform_msg.transform.translation.y = CAMERA_POSITION_ROBOT_FRAME[1]
+    # transform_msg.transform.translation.z = CAMERA_POSITION_ROBOT_FRAME[2]
+    # transform_msg.transform.rotation.x = CAMERA_ORIENTATION_TRANFORM_QUAT[0]
+    # transform_msg.transform.rotation.y = CAMERA_ORIENTATION_TRANFORM_QUAT[1]
+    # transform_msg.transform.rotation.z = CAMERA_ORIENTATION_TRANFORM_QUAT[2]
+    # transform_msg.transform.rotation.w = CAMERA_ORIENTATION_TRANFORM_QUAT[3]
+    # self.broadcaster.sendTransform(transform_msg)
+
+  def camera_imu_callback(self, camera_imu):
+    """Publish camera orientation data to TF."""
+    camera_orientation = camera_imu.orientation
+    camera_orientation_world_frame = [
+        camera_orientation.x, camera_orientation.y, camera_orientation.z,
+        camera_orientation.w
+    ]
+    camera_orientation_rpy = list(
+        p.getEulerFromQuaternion(camera_orientation_world_frame))
+    # Transform between camera and robot coordinate systems
+    _, camera_orientation_world_frame = p.multiplyTransforms(
+        [0., 0., 0.],
+        camera_orientation_world_frame,
+        [0., 0., 0.],
+        CAMERA_ORIENTATION_TRANFORM_QUAT,
+    )
+
+    camera_orientation_rpy = list(
+        p.getEulerFromQuaternion(camera_orientation_world_frame))
+    robot_orientation_rpy = p.getEulerFromQuaternion(
+        self._robot_orientation_quat_xyzw)
+    # Align camera rpy and robot rpy
+    camera_orientation_rpy[2] = robot_orientation_rpy[2]
+    camera_orientation_world_frame = p.getQuaternionFromEuler(
+        camera_orientation_rpy)
+    robot_orientation_world_frame = self._robot_orientation_quat_xyzw
+
+    _, world_orientation_robot_frame = p.invertTransform(
+        [0., 0., 0.], robot_orientation_world_frame)
+    _, camera_orientation_robot_frame = p.multiplyTransforms(
+        [0., 0., 0.], world_orientation_robot_frame, [0., 0., 0.],
+        camera_orientation_world_frame)
+
     transform_msg = geometry_msgs.msg.TransformStamped()
-    transform_msg.header.stamp = robot_state_data.timestamp
+    transform_msg.header.stamp = camera_imu.header.stamp
     transform_msg.header.frame_id = "base_link"
     transform_msg.child_frame_id = "camera_link"
     transform_msg.transform.translation.x = CAMERA_POSITION_ROBOT_FRAME[0]
     transform_msg.transform.translation.y = CAMERA_POSITION_ROBOT_FRAME[1]
     transform_msg.transform.translation.z = CAMERA_POSITION_ROBOT_FRAME[2]
-    transform_msg.transform.rotation.x = CAMERA_ORIENTATION_TRANFORM_QUAT[0]
-    transform_msg.transform.rotation.y = CAMERA_ORIENTATION_TRANFORM_QUAT[1]
-    transform_msg.transform.rotation.z = CAMERA_ORIENTATION_TRANFORM_QUAT[2]
-    transform_msg.transform.rotation.w = CAMERA_ORIENTATION_TRANFORM_QUAT[3]
+    transform_msg.transform.rotation.x = camera_orientation_robot_frame[0]
+    transform_msg.transform.rotation.y = camera_orientation_robot_frame[1]
+    transform_msg.transform.rotation.z = camera_orientation_robot_frame[2]
+    transform_msg.transform.rotation.w = camera_orientation_robot_frame[3]
     self.broadcaster.sendTransform(transform_msg)
-
-  # def camera_imu_callback(self, camera_imu):
-  #   """Publish camera orientation data to TF."""
-  #   camera_orientation = camera_imu.orientation
-  #   camera_orientation_world_frame = [
-  #       camera_orientation.x, camera_orientation.y, camera_orientation.z,
-  #       camera_orientation.w
-  #   ]
-  #   camera_orientation_rpy = list(
-  #       p.getEulerFromQuaternion(camera_orientation_world_frame))
-  #   # Transform between camera and robot coordinate systems
-  #   _, camera_orientation_world_frame = p.multiplyTransforms(
-  #       [0., 0., 0.],
-  #       camera_orientation_world_frame,
-  #       [0., 0., 0.],
-  #       CAMERA_ORIENTATION_TRANFORM_QUAT,
-  #   )
-
-  #   camera_orientation_rpy = list(
-  #       p.getEulerFromQuaternion(camera_orientation_world_frame))
-  #   robot_orientation_rpy = p.getEulerFromQuaternion(
-  #       self._robot_orientation_quat_xyzw)
-  #   # Align camera rpy and robot rpy
-  #   camera_orientation_rpy[2] = robot_orientation_rpy[2]
-  #   camera_orientation_world_frame = p.getQuaternionFromEuler(
-  #       camera_orientation_rpy)
-  #   robot_orientation_world_frame = self._robot_orientation_quat_xyzw
-
-  #   _, world_orientation_robot_frame = p.invertTransform(
-  #       [0., 0., 0.], robot_orientation_world_frame)
-  #   _, camera_orientation_robot_frame = p.multiplyTransforms(
-  #       [0., 0., 0.], world_orientation_robot_frame, [0., 0., 0.],
-  #       camera_orientation_world_frame)
-
-  #   transform_msg = geometry_msgs.msg.TransformStamped()
-  #   transform_msg.header.stamp = camera_imu.header.stamp
-  #   transform_msg.header.frame_id = "base_link"
-  #   transform_msg.child_frame_id = "camera_link"
-  #   transform_msg.transform.translation.x = CAMERA_POSITION_ROBOT_FRAME[0]
-  #   transform_msg.transform.translation.y = CAMERA_POSITION_ROBOT_FRAME[1]
-  #   transform_msg.transform.translation.z = CAMERA_POSITION_ROBOT_FRAME[2]
-  #   transform_msg.transform.rotation.x = camera_orientation_robot_frame[0]
-  #   transform_msg.transform.rotation.y = camera_orientation_robot_frame[1]
-  #   transform_msg.transform.rotation.z = camera_orientation_robot_frame[2]
-  #   transform_msg.transform.rotation.w = camera_orientation_robot_frame[3]
-  #   self.broadcaster.sendTransform(transform_msg)
 
   def depth_info_callback(self, camera_info):
     self._camera_model.fromCameraInfo(camera_info)
@@ -192,7 +192,7 @@ def main(argv):
 
   publisher = TFPublisher()
   rospy.Subscriber("/robot_state", robot_state, publisher.robot_state_callback)
-  # rospy.Subscriber("/imu/data", Imu, publisher.camera_imu_callback)
+  rospy.Subscriber("/imu/data", Imu, publisher.camera_imu_callback)
   rospy.Subscriber("/camera/depth/camera_info", CameraInfo,
                    publisher.depth_info_callback)
   rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image,
