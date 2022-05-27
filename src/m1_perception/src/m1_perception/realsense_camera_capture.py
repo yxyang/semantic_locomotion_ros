@@ -25,9 +25,9 @@ flags.DEFINE_integer('frame_rate', 3, 'frame rate.')
 # Topic settings
 flags.DEFINE_bool('publish_color_image', True,
                   'whether to publish color image.')
-flags.DEFINE_bool('publish_depth_image', True,
+flags.DEFINE_bool('publish_depth_image', False,
                   'whether to publish depth image.')
-flags.DEFINE_bool('publish_color_pointcloud', True,
+flags.DEFINE_bool('publish_color_pointcloud', False,
                   'whether to publish color pointcloud.')
 flags.DEFINE_bool('publish_speedmap_image', True,
                   'whether to publish speedmap image')
@@ -93,7 +93,8 @@ def main(_):
   if FLAGS.publish_speedmap_image:
     speedmap_image_publisher = rospy.Publisher(
         '/perception/speedmap/image_raw', Image, queue_size=1)
-  if FLAGS.publish_color_pointcloud:
+        
+  if FLAGS.publish_speedmap_pointcloud:
     speedmap_pointcloud_publisher = rospy.Publisher(
         '/perception/speedmap/pointcloud', PointCloud2, queue_size=1)
 
