@@ -20,7 +20,7 @@ flags.DEFINE_string('grpc_server_addr', '10.211.55.2', 'server address.')
 flags.DEFINE_integer('port', 5005, 'port number.')
 flags.DEFINE_integer('frame_width', 424, 'frame width.')
 flags.DEFINE_integer('frame_height', 240, 'frame height.')
-flags.DEFINE_integer('frame_rate', 6, 'frame rate.')
+flags.DEFINE_integer('frame_rate', 3, 'frame rate.')
 
 # Topic settings
 flags.DEFINE_bool('publish_color_image', True,
