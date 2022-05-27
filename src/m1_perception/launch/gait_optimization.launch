@@ -1,9 +1,13 @@
 <launch>
+    <arg name="show_gui" default="false"/>
+    <arg name="grpc_server_addr" default="10.211.55.2"/>
     <include file="$(find gamepad_controller)/launch/gamepad_sim.launch" >
-        <arg name="show_gui" value="true" />
+        <arg name="show_gui" value="$(arg show_gui)" />
     </include>
     <include file="$(find m1_perception)/launch/perception.launch" >
+        <arg name="grpc_server_addr" value="$(arg grpc_server_addr)"/>
     </include>
+    <node pkg="slam" type="bev_speedmap_generator.py" name="speedmap_generator"/>
     <node pkg="info_publisher" type="tf_publisher.py" name="tf_publisher" />
     <include file="$(find nmea_navsat_driver)/launch/nmea_serial_driver.launch">
         <arg name="port" value="/dev/ttyACM0"/>

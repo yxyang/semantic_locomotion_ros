@@ -163,8 +163,6 @@ def main(argv):
                                             resolution=0.05)
   rospy.Subscriber('/perception/speedmap/pointcloud', PointCloud2,
                    speedmap_generator.speedmap_pointcloud_callback)
-  rospy.Subscriber('/perception/speedmap/image', CompressedImage,
-                   speedmap_generator.speedmap_pointcloud_callback)
   rospy.spin()
 
 

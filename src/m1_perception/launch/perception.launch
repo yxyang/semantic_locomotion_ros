@@ -1,8 +1,9 @@
 <launch>
-    <node pkg="m1_perception" type="realsense_camera_capture.py" name="realsense_camera_capture" />
+    <arg name="grpc_server_addr" default="10.211.55.2"/>
+    <node pkg="m1_perception" type="realsense_camera_capture.py" name="realsense_camera_capture"
+        args="--grpc_server_addr=$(arg grpc_server_addr)"/>
     <node pkg="m1_perception" type="compute_gait_from_speed.py" name="compute_gait_from_speed" respawn="true" />
-    <node pkg="m1_perception" type="compute_speed_from_perception_grpc.py" name="compute_speed_from_perception_grpc" respawn="true" args="--server_addr=localhost" />
-     <node name="republish_rgb" type="republish" pkg="image_transport" args="raw in:=/camera/color/image_raw compressed  out:=/camera/color/image_raw_repub" />
+    <node name="republish_rgb" type="republish" pkg="image_transport" args="raw in:=/camera/color/image_raw compressed  out:=/camera/color/image_raw_repub" />
     <node pkg="info_publisher" type="web_server.py" name="web_server" />
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
         <arg name="port" value="9090"/>
