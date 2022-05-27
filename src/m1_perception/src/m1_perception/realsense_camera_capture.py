@@ -33,6 +33,8 @@ flags.DEFINE_bool('publish_speedmap_image', True,
                   'whether to publish speedmap image')
 flags.DEFINE_bool('publish_speedmap_pointcloud', True,
                   'whether to publish speedmap pointcloud')
+flags.DEFINE_bool('publish_speed_command', True,
+                  'whether to publish speedmap pointcloud')
 FLAGS = flags.FLAGS
 
 
@@ -95,6 +97,11 @@ def main(_):
     speedmap_pointcloud_publisher = rospy.Publisher(
         '/perception/speedmap/pointcloud', PointCloud2, queue_size=1)
 
+  if FLAGS.publish_speed_command:
+    speed_command_publisher = rospy.Publisher('autospeed_command',
+                                              speed_command,
+                                              queue_size=1)
+
   rate = rospy.Rate(FLAGS.frame_rate)
   while not rospy.is_shutdown():
     # Get frame
@@ -115,7 +122,6 @@ def main(_):
         color_image.shape)
     speedmap_image, speed_command_msg = compute_speed_map(
         color_image, stub, segmentation_mask)
-    del speed_command_msg  # unused
     speed_image_bgr = utils.convert_speedmap_to_bgr(speedmap_image)
 
     # Publish messages
@@ -165,6 +171,9 @@ def main(_):
       msg = ros_numpy.point_cloud2.array_to_pointcloud2(arr,
                                                         frame_id='camera_link')
       speedmap_pointcloud_publisher.publish(msg)
+
+    if FLAGS.publish_speed_command:
+      speed_command_publisher.publish(speed_command_msg)
 
     rate.sleep()
 
