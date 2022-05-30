@@ -84,7 +84,7 @@ class PathGenerator:
 
     path = Path()
     path.header.stamp = rospy.get_rostime()
-    path.header.frame_id = 'base_link'
+    path.header.frame_id = 'base_flat'
     waypoints, waypoints_cartesian = [], []
     for gps_waypoint in self._waypoints:
       lat, lon = gps_waypoint

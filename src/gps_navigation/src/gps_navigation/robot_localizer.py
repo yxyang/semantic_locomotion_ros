@@ -10,15 +10,14 @@ import rospy
 from sensor_msgs.msg import NavSatFix, NavSatStatus
 import tf2_ros
 
-from a1_interface.msg import speed_command
+from a1_interface.msg import robot_state
 
-flags.DEFINE_float('control_timestep', 0.02, 'the control timestep.')
 flags.DEFINE_string('gps_anchor_file', None, 'path to gps anchor coordinates.')
 flags.DEFINE_bool('use_emulated_gps', True, 'whether to use emulated gps.')
 FLAGS = flags.FLAGS
 
 
-class PointmassRobot:
+class RobotLocalizer:
   """A simple pointmass robot."""
   def __init__(self, dt=0.002):
     self._px, self._py, self._heading = 0., 0., 0.
@@ -38,35 +37,23 @@ class PointmassRobot:
     self._gps_anchor_world_frame = [self._px, self._py]
     self._gps_anchor_lat_lon = [latitude, longitude]
 
-  def step_simulation(self):
-    """Simulate the pointmass robot from joystick commands."""
-    vx_world_frame = self._vx * np.cos(self._heading) - self._vy * np.sin(
-        self._heading)
-    vy_world_frame = self._vx * np.sin(self._heading) + self._vy * np.cos(
-        self._heading)
-    self._px += vx_world_frame * self._dt
-    self._py += vy_world_frame * self._dt
-    self._heading += self._rot_z * self._dt
-    self._broadcast_tf()
-    self._broadcast_gps()
-
-  def _broadcast_tf(self):
+  def robot_state_callback(self, robot_state_msg):
     """Broadcast TF transforms."""
+    self._px = robot_state_msg.base_position[0]
+    self._py = robot_state_msg.base_position[1]
     transform_msg = geometry_msgs.msg.TransformStamped()
     transform_msg.header.stamp = rospy.get_rostime()
     transform_msg.header.frame_id = "world"
-    transform_msg.child_frame_id = "base_link"
+    transform_msg.child_frame_id = "base_flat"
     transform_msg.transform.translation.x = self._px
     transform_msg.transform.translation.y = self._py
     transform_msg.transform.translation.z = 0.
     transform_msg.transform.rotation.x = 0.
     transform_msg.transform.rotation.y = 0.
-    transform_msg.transform.rotation.z = np.sin(self._heading / 2)
-    transform_msg.transform.rotation.w = np.cos(self._heading / 2)
+    transform_msg.transform.rotation.z = 0.
+    transform_msg.transform.rotation.w = 1.
     self._tf_broadcaster.sendTransform(transform_msg)
 
-  def _broadcast_gps(self):
-    """Broadcast emulated GPS coordinate."""
     s12 = np.sqrt((self._px - self._gps_anchor_world_frame[0])**2 +
                   (self._py - self._gps_anchor_world_frame[1])**2)
     angle_world_rad = np.arctan2(self._py - self._gps_anchor_world_frame[1],
@@ -82,7 +69,7 @@ class PointmassRobot:
                                       s12=s12)
     fix = NavSatFix()
     fix.header.stamp = rospy.get_rostime()
-    fix.header.frame_id = 'base_link'
+    fix.header.frame_id = 'base_flat'
     fix.status.status = NavSatStatus.STATUS_FIX
     fix.status.service = NavSatStatus.SERVICE_GPS
     fix.latitude = new_coord['lat2']
@@ -113,18 +100,15 @@ def main(argv):
   rospy.init_node("pointmass_robot", anonymous=True)
 
   waypoints_file = np.load(open(FLAGS.gps_anchor_file, 'rb'))
-  robot = PointmassRobot(FLAGS.control_timestep)
-  robot.update_gps_anchor(waypoints_file[0, 0], waypoints_file[0, 1])
+  localizer = RobotLocalizer()
+  localizer.update_gps_anchor(waypoints_file[0, 0], waypoints_file[0, 1])
   if FLAGS.use_emulated_gps:
-    rospy.Subscriber("speed_command", speed_command,
-                     robot.speed_command_callback)
-    rate = rospy.Rate(1 / FLAGS.control_timestep)
-    while not rospy.is_shutdown():
-      robot.step_simulation()
-      rate.sleep()
+    rospy.Subscriber("/robot_state", robot_state,
+                     localizer.robot_state_callback)
   else:
-    rospy.Subscriber('/fix', NavSatFix, robot.gps_fix_callback)
-    rospy.spin()
+    rospy.Subscriber('/fix', NavSatFix, localizer.gps_fix_callback)
+
+  rospy.spin()
 
 
 if __name__ == "__main__":

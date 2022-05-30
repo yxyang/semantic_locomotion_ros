@@ -13,7 +13,7 @@
   });
 
   ros.on('connection', function() {
-    console.log('Connected to websocket server.');
+    console.log('connected to websocket server.');
     document.getElementById('connection').innerHTML = "Connected to websocket server."
   });
 
@@ -71,15 +71,36 @@
   nav_map_topic.subscribe(function(message) {
     document.getElementById('nav_map').src = "data:image/png;base64," + message.data;
   });
+
+  var nmea_fix_topic = new ROSLIB.Topic(
+    {ros: ros, name: '/fix',
+    messageType: 'sensor_msgs/NavSatFix'}
+  );
+
+  nmea_fix_topic.subscribe(function(message) {
+    if (message.status.status == -1) {
+      document.getElementById('gps_status').innerHTML = "no fix";
+    } else if (message.status.status == 0) {
+      document.getElementById('gps_status').innerHTML = "fix";
+    } else if (message.status.status == 1) {
+      document.getElementById('gps_status').innerHTML = "SBAS";
+    } else if (message.status.status == 2) {
+      document.getElementById('gps_status').innerHTML = "GBAS";
+    } else {
+      document.getElementById('gps_status').innerHTML = "Unknown";
+    }
+  })
 </script>
 </head>
 
 <body>
   <h1>Outdoor Locomotion</h1>
-  System status: <p id="connection">Connecting to ROS...</p>
+  System status: <span id="connection">Connecting to ROS...</span>
   <h2>Camera Image and Speed Map</h2>
   <img id="camera_image" style='height: 49%; width: 49%; object-fit: contain' src="assets/img/placeholder.png">
   <img id="speed_map" style='height: 49%; width: 49%; object-fit: contain' src="assets/img/placeholder.png">
+
+  <p>GPS status: <span id="gps_status"/></p>
   <p id="distance_to_waypoint">Distance to waypoint: unknown.</p>
   <img id="bev_speed_map" style='height: 30%; width: 30%; object-fit: contain' src="assets/img/placeholder.png">
   <img id="nav_map" style='height: 30%; width: 30%; object-fit: contain' src="assets/img/placeholder.png">

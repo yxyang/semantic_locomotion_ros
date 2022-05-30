@@ -5,6 +5,7 @@ src/ddynamic_reconfigure
 src/image_transport_plugins
 src/ros_numpy
 src/theora_image_transport
+data_rss/
 
 # MP4 log files
 *.mp4

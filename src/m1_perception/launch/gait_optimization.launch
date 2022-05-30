@@ -9,9 +9,5 @@
     </include>
     <node pkg="slam" type="bev_speedmap_generator.py" name="speedmap_generator"/>
     <node pkg="info_publisher" type="tf_publisher.py" name="tf_publisher" />
-    <include file="$(find nmea_navsat_driver)/launch/nmea_serial_driver.launch">
-        <arg name="port" value="/dev/ttyACM0"/>
-        <arg name="baud" value="38400"/>
-    </include>
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find m1_perception)/rviz/default.rviz" />
 </launch>

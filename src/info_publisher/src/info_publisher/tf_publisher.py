@@ -28,7 +28,7 @@ class TFPublisher:
     """Publish robot state data to TF."""
     transform_msg = geometry_msgs.msg.TransformStamped()
     transform_msg.header.stamp = robot_state_data.timestamp
-    transform_msg.header.frame_id = "world"
+    transform_msg.header.frame_id = "base_flat"
     transform_msg.child_frame_id = "base_link"
     transform_msg.transform.translation.x = 0.
     transform_msg.transform.translation.y = 0.

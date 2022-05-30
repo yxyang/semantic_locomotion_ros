@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """GRPC server for semantic embedding."""
 from concurrent import futures
 import time

@@ -3,11 +3,10 @@
 from absl import app
 from absl import flags
 
-import cv2
 import numpy as np
 import ros_numpy
 import rospy
-from sensor_msgs.msg import CompressedImage, PointCloud2
+from sensor_msgs.msg import Image, PointCloud2
 import tf2_py as tf2
 import tf2_ros
 
@@ -59,9 +58,7 @@ class BEVSpeedMapGenerator:
     self._occupancy_grid_publisher = rospy.Publisher(
         "/perception/bev_speedmap/occupancygrid", PointCloud2, queue_size=1)
     self._image_publisher = rospy.Publisher(
-        "/perception/bev_speedmap/image/compressed",
-        CompressedImage,
-        queue_size=1)
+        "/perception/bev_speedmap/image_raw", Image, queue_size=1)
 
   def speedmap_pointcloud_callback(self, msg):
     """Converts from BEV speedcloud to BEV speedmap."""
@@ -107,11 +104,7 @@ class BEVSpeedMapGenerator:
                [-self._map_width / 2, self._map_width / 2]])
     avg_speed = (speed_sum / (speed_count + 1e-7)).T
 
-    msg = CompressedImage()
-    msg.header.stamp = rospy.Time.now()
-    msg.format = "png"
-    msg.data = np.array(cv2.imencode(".png",
-                                     convert_to_rgb(avg_speed))[1]).tobytes()
+    msg = ros_numpy.image.numpy_to_image(avg_speed.astype(np.float32), '32FC1')
     self._image_publisher.publish(msg)
 
     grid_coord_x, grid_coord_y = np.meshgrid(np.arange(self._num_bins_x),
