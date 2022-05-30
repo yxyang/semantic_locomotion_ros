@@ -41,19 +41,7 @@ class RobotLocalizer:
     """Broadcast TF transforms."""
     self._px = robot_state_msg.base_position[0]
     self._py = robot_state_msg.base_position[1]
-    transform_msg = geometry_msgs.msg.TransformStamped()
-    transform_msg.header.stamp = rospy.get_rostime()
-    transform_msg.header.frame_id = "world"
-    transform_msg.child_frame_id = "base_flat"
-    transform_msg.transform.translation.x = self._px
-    transform_msg.transform.translation.y = self._py
-    transform_msg.transform.translation.z = 0.
-    transform_msg.transform.rotation.x = 0.
-    transform_msg.transform.rotation.y = 0.
-    transform_msg.transform.rotation.z = 0.
-    transform_msg.transform.rotation.w = 1.
-    self._tf_broadcaster.sendTransform(transform_msg)
-
+    self._broadcast_tf()
     s12 = np.sqrt((self._px - self._gps_anchor_world_frame[0])**2 +
                   (self._py - self._gps_anchor_world_frame[1])**2)
     angle_world_rad = np.arctan2(self._py - self._gps_anchor_world_frame[1],
@@ -75,6 +63,20 @@ class RobotLocalizer:
     fix.latitude = new_coord['lat2']
     fix.longitude = new_coord['lon2']
     self._gps_publisher.publish(fix)
+
+  def _broadcast_tf(self):
+    transform_msg = geometry_msgs.msg.TransformStamped()
+    transform_msg.header.stamp = rospy.get_rostime()
+    transform_msg.header.frame_id = "world"
+    transform_msg.child_frame_id = "base_flat"
+    transform_msg.transform.translation.x = self._px
+    transform_msg.transform.translation.y = self._py
+    transform_msg.transform.translation.z = 0.
+    transform_msg.transform.rotation.x = 0.
+    transform_msg.transform.rotation.y = 0.
+    transform_msg.transform.rotation.z = 0.
+    transform_msg.transform.rotation.w = 1.
+    self._tf_broadcaster.sendTransform(transform_msg)
 
   def gps_fix_callback(self, fix):
     """Update path from GPS fix message."""
