@@ -4,7 +4,7 @@
         args="--grpc_server_addr=$(arg grpc_server_addr)" respawn="true"/>
     <node name="republish_camera_rgb" type="republish" pkg="image_transport" args="raw in:=/camera/color/image_raw compressed  out:=/camera/color/image_raw_repub" />
     <node name="republish_speedmap_rgb" type="republish" pkg="image_transport" args="raw in:=/perception/speedmap/image_raw compressed  out:=/perception/speedmap/image_raw_repub" />
-    <node name="republish_bev_speedmap" type="republish" pkg="image_transport" args="raw in:=/perception/bev_speedmap/image_rgb_raw compressed  out:=/perception/speedmap/image_rgb_raw_repub" />
+    <node name="republish_bev_speedmap" type="republish" pkg="image_transport" args="raw in:=/perception/bev_speedmap/image_rgb_raw compressed  out:=/perception/bev_speedmap/image_rgb_raw_repub" />
     <node pkg="info_publisher" type="web_server.py" name="web_server" />
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
         <arg name="port" value="9090"/>
