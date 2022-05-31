@@ -1,7 +1,7 @@
 <launch>
     <arg name="grpc_server_addr" default="10.211.55.2"/>
     <node pkg="m1_perception" type="realsense_camera_capture.py" name="realsense_camera_capture"
-        args="--grpc_server_addr=$(arg grpc_server_addr)"/>
+        args="--grpc_server_addr=$(arg grpc_server_addr)" respawn="true"/>
     <node pkg="m1_perception" type="compute_gait_from_speed.py" name="compute_gait_from_speed" respawn="true" />
     <node name="republish_camera_rgb" type="republish" pkg="image_transport" args="raw in:=/camera/color/image_raw compressed  out:=/camera/color/image_raw_repub" />
     <node name="republish_speedmap_rgb" type="republish" pkg="image_transport" args="raw in:=/perception/speedmap/image_raw compressed  out:=/perception/speedmap/image_raw_repub" />
