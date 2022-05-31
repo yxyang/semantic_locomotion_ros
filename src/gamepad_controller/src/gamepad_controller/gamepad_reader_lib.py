@@ -33,6 +33,8 @@ class GaitMode(enum.Enum):
   MANUAL_SPEED_AUTO_GAIT = 2
   # Policy specifies gait + speed. Teleop specifies steering.
   AUTO_SPEED_AUTO_GAIT = 3
+  # Fully autonomous operation
+  AUTO_NAV = 4
 
 
 def _interpolate(raw_reading, max_raw_reading, new_scale):
@@ -76,7 +78,7 @@ class Gamepad:
     self._mode = next(self._mode_generator)
     self._gait_mode_generator = itertools.cycle([
         GaitMode.MANUAL_SPEED_MANUAL_GAIT, GaitMode.MANUAL_SPEED_AUTO_GAIT,
-        GaitMode.AUTO_SPEED_AUTO_GAIT
+        GaitMode.AUTO_SPEED_AUTO_GAIT, GaitMode.AUTO_NAV
     ])
     self._gait_mode = next(self._gait_mode_generator)
 
@@ -209,6 +211,10 @@ class Gamepad:
   @property
   def vel_scale_y(self):
     return self._vel_scale_y
+
+  @property
+  def vel_scale_rot(self):
+    return self._vel_scale_rot
 
   def stop(self):
     self.is_running = False

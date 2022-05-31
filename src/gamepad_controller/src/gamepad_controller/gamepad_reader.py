@@ -13,6 +13,7 @@ from a1_interface.msg import robot_state
 from a1_interface.msg import speed_command
 
 from gamepad_controller.gamepad_reader_lib import Gamepad, GaitMode
+from m1_perception.gait_policy.manual_gait_policy import ManualGaitPolicy
 
 FLAGS = flags.FLAGS
 
@@ -34,23 +35,6 @@ class RobotStateListener:
   @property
   def controller_mode(self):
     return self._controller_mode
-
-
-class GaitCommandListener:
-  """Listens and stores auto-gait command."""
-  def __init__(self):
-    self._desired_gait_type = gait_command(
-        timing_parameters=[3.5, np.pi, np.pi, 0, 0.5],
-        base_height=0.26,
-        foot_clearance=0.13,
-        timestamp=rospy.get_rostime())
-
-  def callback(self, msg):
-    self._desired_gait_type = msg
-
-  @property
-  def desired_gait_type(self):
-    return self._desired_gait_type
 
 
 class SpeedCommandListener:
@@ -79,18 +63,19 @@ def main(_):
                                             speed_command,
                                             queue_size=1)
   estop_publisher = rospy.Publisher('estop', Bool, queue_size=1)
-  autogait_publisher = rospy.Publisher('autogait', String, queue_size=1)
+  gaitmode_publisher = rospy.Publisher('gait_mode', String, queue_size=1)
 
   # Define listeners
   robot_state_listener = RobotStateListener()
   rospy.Subscriber('robot_state', robot_state, robot_state_listener.callback)
-  gait_command_listener = GaitCommandListener()
-  rospy.Subscriber('autogait_command', gait_command,
-                   gait_command_listener.callback)
   speed_command_listener = SpeedCommandListener()
   rospy.Subscriber('autospeed_command', speed_command,
                    speed_command_listener.callback)
+  nav_command_listener = SpeedCommandListener()
+  rospy.Subscriber('autonav_command', speed_command,
+                   nav_command_listener.callback)
 
+  gait_policy = ManualGaitPolicy()
   gait_command_publisher = rospy.Publisher('gait_command',
                                            gait_command,
                                            queue_size=1)
@@ -102,19 +87,17 @@ def main(_):
       gamepad.flag_estop()
     controller_mode_publisher.publish(gamepad.mode_command)
     estop_publisher.publish(gamepad.estop_flagged)
-    autogait_publisher.publish(str(gamepad.gait_mode))
+    gaitmode_publisher.publish(str(gamepad.gait_mode))
     if gamepad.gait_mode == GaitMode.MANUAL_SPEED_MANUAL_GAIT:
       gait_command_publisher.publish(gamepad.gait_command)
       speed_command_publisher.publish(gamepad.speed_command)
     elif gamepad.gait_mode == GaitMode.MANUAL_SPEED_AUTO_GAIT:
-      desired_gait = gait_command_listener.desired_gait_type
+      desired_gait = gait_policy.get_action(gamepad.speed_command)
       gait_command_publisher.publish(desired_gait)
       cmd = gamepad.speed_command
       speed_command_publisher.publish(cmd)
-    else:
+    elif gamepad.gait_mode == GaitMode.AUTO_SPEED_AUTO_GAIT:
       # AUTO_SPEED_AUTO_GAIT, human could adjust speed
-      desired_gait = gait_command_listener.desired_gait_type
-      gait_command_publisher.publish(desired_gait)
       cmd = gamepad.speed_command
       neutral_x = speed_command_listener.desired_speed.vel_x
       cmd.vel_x /= gamepad.vel_scale_x
@@ -132,6 +115,38 @@ def main(_):
           neutral_y + cmd.vel_y * (gamepad.vel_scale_y - neutral_y))
       cmd.rot_z = gamepad.speed_command.rot_z
       speed_command_publisher.publish(cmd)
+      desired_gait = gait_policy.get_action(cmd)
+      gait_command_publisher.publish(desired_gait)
+    else:
+      # AutoNav
+      cmd = gamepad.speed_command
+      neutral_x = nav_command_listener.desired_speed.vel_x
+      cmd.vel_x /= gamepad.vel_scale_x
+      cmd.vel_x = np.where(
+          cmd.vel_x < 0,
+          # Brake
+          (cmd.vel_x + 1) * neutral_x,
+          # Accelerate
+          neutral_x + cmd.vel_x * (gamepad.vel_scale_x - neutral_x))
+
+      neutral_y = nav_command_listener.desired_speed.vel_y
+      cmd.vel_y /= gamepad.vel_scale_y  # Normalize to [-1, 1]
+      cmd.vel_y = np.where(
+          cmd.vel_y < 0, -gamepad.vel_scale_y + (cmd.vel_y + 1) *
+          (neutral_y + gamepad.vel_scale_y),
+          neutral_y + cmd.vel_y * (gamepad.vel_scale_y - neutral_y))
+
+      neutral_rot = nav_command_listener.desired_speed.rot_z
+      cmd.rot_z /= gamepad.vel_scale_rot
+      cmd.rot_z = np.where(
+          cmd.rot_z < 0, -gamepad.vel_scale_rot + (cmd.rot_z + 1) *
+          (neutral_rot + gamepad.vel_scale_rot),
+          neutral_rot + cmd.rot_z * (gamepad.vel_scale_rot - neutral_rot))
+
+      speed_command_publisher.publish(cmd)
+      desired_gait = gait_policy.get_action(cmd)
+      gait_command_publisher.publish(desired_gait)
+
     rate.sleep()
 
   gamepad.stop()

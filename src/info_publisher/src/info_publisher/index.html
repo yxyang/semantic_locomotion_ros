@@ -36,6 +36,15 @@
     document.getElementById('distance_to_waypoint').innerHTML = message.data;
   });
 
+  var operation_mode_topic = new ROSLIB.Topic({
+    ros: ros, name: '/gait_mode',
+    messageType: 'std_msgs/String'
+  })
+
+  operation_mode_topic.subscribe(function(message) {
+    document.getElementById('operation_mode').innerHTML = message.data;
+  })
+
   var camera_image_topic = new ROSLIB.Topic({
     ros: ros, name: '/camera/color/image_raw_repub/compressed',
     messageType: 'sensor_msgs/CompressedImage'
@@ -55,7 +64,7 @@
   });
 
   var bev_speed_map_topic = new ROSLIB.Topic({
-    ros: ros, name: '/perception/bev_speedmap/image/compressed',
+    ros: ros, name: '/perception/speedmap/image_rgb_raw_repub/compressed',
     messageType: 'sensor_msgs/CompressedImage'
   });
 
@@ -95,7 +104,9 @@
 
 <body>
   <h1>Outdoor Locomotion</h1>
-  System status: <span id="connection">Connecting to ROS...</span>
+  <p>System status: <span id="connection">Connecting to ROS...</span></p>
+
+  <p>Operation status: <span id="operation_mode"></span></p>
   <h2>Camera Image and Speed Map</h2>
   <img id="camera_image" style='height: 49%; width: 49%; object-fit: contain' src="assets/img/placeholder.png">
   <img id="speed_map" style='height: 49%; width: 49%; object-fit: contain' src="assets/img/placeholder.png">
