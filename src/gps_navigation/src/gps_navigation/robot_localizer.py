@@ -65,6 +65,7 @@ class RobotLocalizer:
     self._gps_publisher.publish(fix)
 
   def _broadcast_tf(self):
+    """Broadcast TF message."""
     transform_msg = geometry_msgs.msg.TransformStamped()
     transform_msg.header.stamp = rospy.get_rostime()
     transform_msg.header.frame_id = "world"

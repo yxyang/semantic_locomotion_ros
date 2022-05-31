@@ -1,7 +1,17 @@
 <launch>
   <!-- Localization -->
-  <node pkg="gps_navigation" type="robot_localizer.py" name="pointmass_robot" respawn="false" args="--gps_anchor_file=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/around_lawn.npy --use_emulated_gps=False"/>
+  <node pkg="gps_navigation" type="robot_localizer.py" name="robot_localizer" respawn="false" args="--gps_anchor_file=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/around_lawn.npy --use_emulated_gps=False"/>
   <node pkg="gps_navigation" type="path_generator.py" name="path_generator" respawn="false" args="--waypoint_file_path=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/around_lawn.npy"/>
+  <node name="nmea_serial_driver_node" pkg="nmea_navsat_driver" type="nmea_serial_driver" output="screen" respawn="true">
+    <param name="port" value="/dev/ttyACM0"/>
+    <param name="baud" value="460800" />
+    <param name="frame_id" value="gps" />
+    <param name="use_GNSS_time" value="False" />
+    <param name="time_ref_source" value="gps" />
+    <param name="useRMC" value="False" />
+  </node>
+
+
   <include file="$(find nmea_navsat_driver)/launch/nmea_serial_driver.launch">
     <arg name="port" value="/dev/ttyACM0"/>
     <arg name="baud" value="460800"/>
