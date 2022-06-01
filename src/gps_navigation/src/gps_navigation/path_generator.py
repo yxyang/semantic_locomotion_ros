@@ -65,7 +65,7 @@ class PathGenerator:
 
     # Get robot transform since we publish in robot frame
     try:
-      trans = self._tf_buffer.lookup_transform('world', fix.header.frame_id,
+      trans = self._tf_buffer.lookup_transform('world', 'base_link',
                                                fix.header.stamp,
                                                rospy.Duration(1))
     except tf2.LookupException as ex:
@@ -84,7 +84,7 @@ class PathGenerator:
 
     path = Path()
     path.header.stamp = rospy.get_rostime()
-    path.header.frame_id = 'base_flat'
+    path.header.frame_id = 'base_link'
     waypoints, waypoints_cartesian = [], []
     for gps_waypoint in self._waypoints:
       lat, lon = gps_waypoint

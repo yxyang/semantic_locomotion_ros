@@ -18,7 +18,8 @@ flags.DEFINE_bool('publish_pointcloud', False,
                   'whether to publish speedmap as a colored pointcloud.')
 flags.DEFINE_bool('publish_rgb', True,
                   'whether to publish speedmap as a RGB image.')
-
+flags.DEFINE_float('height_tolerance', 0.1,
+                   'height tolerance in pointcloud filtering.')
 FLAGS = flags.FLAGS
 
 
@@ -176,7 +177,7 @@ def main(argv):
   del argv  # unused
   rospy.init_node('bev_speedmap_generator', anonymous=True)
   speedmap_generator = BEVSpeedMapGenerator(
-      height_tolerance=0.1,
+      height_tolerance=FLAGS.height_tolerance,
       resolution=0.05,
       publish_rgb=FLAGS.publish_rgb,
       publish_pointcloud=FLAGS.publish_pointcloud)

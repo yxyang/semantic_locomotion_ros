@@ -72,7 +72,7 @@ def main(_):
   rospy.Subscriber('autospeed_command', speed_command,
                    speed_command_listener.callback)
   nav_command_listener = SpeedCommandListener()
-  rospy.Subscriber('autonav_command', speed_command,
+  rospy.Subscriber('/navigation/speed_command', speed_command,
                    nav_command_listener.callback)
 
   gait_policy = ManualGaitPolicy()
