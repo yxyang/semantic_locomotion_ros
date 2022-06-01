@@ -18,7 +18,7 @@ flags.DEFINE_bool('publish_pointcloud', False,
                   'whether to publish speedmap as a colored pointcloud.')
 flags.DEFINE_bool('publish_rgb', True,
                   'whether to publish speedmap as a RGB image.')
-flags.DEFINE_float('height_tolerance', 0.1,
+flags.DEFINE_float('height_tolerance', 1.,
                    'height tolerance in pointcloud filtering.')
 FLAGS = flags.FLAGS
 
