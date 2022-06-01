@@ -104,7 +104,7 @@ def main(_):
       cmd.vel_x = np.where(
           cmd.vel_x < 0,
           # Brake
-          (cmd.vel_x + 1) * neutral_x,
+          -0.5 + (cmd.vel_x + 1) * (neutral_x + 0.5),
           # Accelerate
           neutral_x + cmd.vel_x * (gamepad.vel_scale_x - neutral_x))
       neutral_y = speed_command_listener.desired_speed.vel_y
@@ -125,7 +125,7 @@ def main(_):
       cmd.vel_x = np.where(
           cmd.vel_x < 0,
           # Brake
-          (cmd.vel_x + 1) * neutral_x,
+          -0.5 + (cmd.vel_x + 1) * (neutral_x + 0.5),
           # Accelerate
           neutral_x + cmd.vel_x * (gamepad.vel_scale_x - neutral_x))
 
