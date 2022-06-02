@@ -7,7 +7,7 @@
     <include file="$(find m1_perception)/launch/perception.launch" >
         <arg name="grpc_server_addr" value="$(arg grpc_server_addr)"/>
     </include>
-    <node pkg="slam" type="bev_speedmap_generator.py" name="speedmap_generator" args="--height_tolerance=1"/>
+    <node pkg="slam" type="bev_speedmap_generator.py" name="speedmap_generator" args="--height_tolerance=0.2"/>
     <node pkg="info_publisher" type="tf_publisher.py" name="tf_publisher" />
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find m1_perception)/rviz/default.rviz" />
 </launch>
