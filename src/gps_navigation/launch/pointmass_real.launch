@@ -1,6 +1,6 @@
 <launch>
-  <node pkg="gps_navigation" type="robot_localizer.py" name="robot_localizer" respawn="false" args="--gps_anchor_file=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/around_lawn.npy --use_emulated_gps=False"/>
-  <node pkg="gps_navigation" type="path_generator.py" name="path_generator" respawn="false" args="--waypoint_file_path=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/around_lawn.npy"/>
+  <node pkg="gps_navigation" type="robot_localizer.py" name="robot_localizer" respawn="false" args="--gps_anchor_file=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/taylor_fields.npy --use_emulated_gps=False"/>
+  <node pkg="gps_navigation" type="path_generator.py" name="path_generator" respawn="false" args="--waypoint_file_path=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/taylor_fields.npy"/>
   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find gps_navigation)/rviz/pointmass.rviz" />
   <include file="$(find nmea_navsat_driver)/launch/nmea_serial_driver.launch">
     <arg name="port" value="/dev/ttyACM0"/>

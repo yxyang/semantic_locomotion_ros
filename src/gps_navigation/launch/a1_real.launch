@@ -1,7 +1,7 @@
 <launch>
   <!-- Localization -->
-  <node pkg="gps_navigation" type="robot_localizer.py" name="robot_localizer" respawn="false" args="--gps_anchor_file=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/around_lawn.npy --use_emulated_gps=False"/>
-  <node pkg="gps_navigation" type="path_generator.py" name="path_generator" respawn="false" args="--waypoint_file_path=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/around_lawn.npy"/>
+  <node pkg="gps_navigation" type="robot_localizer.py" name="robot_localizer" respawn="false" args="--gps_anchor_file=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/taylor_fields.npy --use_emulated_gps=False"/>
+  <node pkg="gps_navigation" type="path_generator.py" name="path_generator" respawn="false" args="--waypoint_file_path=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/taylor_fields.npy"/>
   <node pkg="gps_navigation" type="path_planner.py" name="path_planner" respawn="false"/>
   <node name="nmea_serial_driver_node" pkg="nmea_navsat_driver" type="nmea_serial_driver" output="screen" respawn="true">
     <param name="port" value="/dev/ttyACM0"/>
@@ -17,5 +17,5 @@
   <include file="$(find m1_perception)/launch/gait_optimization_real.launch"/>
 
   <!-- Logging -->
-  <node pkg="rosbag" type="record" name="rosbag_record" args="-o /home/yxyang/research/semantic_locomotion_ros/logs/bag --split --duration=1m /camera/aligned_depth_to_color/image_raw /camera/color/image_raw /camera/speedmap/pointcloud /perception/bev_speedmap/image_raw /robot_state /fix" />
+  <node pkg="rosbag" type="record" name="rosbag_record" args="-o /home/yxyang/research/semantic_locomotion_ros/logs/bag --split --duration=1m /camera/aligned_depth_to_color/image_raw /camera/color/image_raw /perception/bev_speedmap/image_raw /robot_state /fix /speed_command /controller_mode" />
 </launch>
