@@ -39,7 +39,7 @@ _FORCE_DIMENSION = 3
 # _MPC_WEIGHTS = (1., 1., 0, 0, 0, 20, 0., 0., .1, 1., 1., .0, 0.)
 
 # Experimental
-_MPC_WEIGHTS = (1., 1., 0, 0, 0, 10, 0., 0., .1, .1, .1, .0, 0)
+_MPC_WEIGHTS = (1., 1., 0, 0, 0, 20, 0., 0., .1, .1, .1, .0, 0)
 
 # Graveyard: these weights don't work at all
 # _MPC_WEIGHTS = (1., 1., 0, 0, 0, 20, 0., 0., 1., 2., 1., .0, 0)
@@ -261,7 +261,7 @@ class TorqueStanceLegController:
       for joint_id, torque in motor_torques.items():
         action[joint_id] = MotorCommand(
             desired_position=desired_motor_angles[joint_id],
-            kp=20,  #10,
+            kp=20,
             desired_velocity=0,
             kd=1,
             desired_extra_torque=torque)
