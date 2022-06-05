@@ -17,15 +17,19 @@ from m1_perception.speed_model import mask_utils
 
 flags.DEFINE_string('vision_model_dir', 'checkpoints/vision_model/cp-99.ckpt',
                     'path to vision model.')
-flags.DEFINE_string('pca_data_dir', 'checkpoints/vision_model/pca_data.npz',
-                    'path to pca data.')
-flags.DEFINE_string('speed_model_dir', 'checkpoints/speed_model/cp-99.ckpt',
+flags.DEFINE_string('speed_model_dir',
+                    'checkpoints/speed_model_summer/cp-46.ckpt',
                     'path to speed model.')
 flags.DEFINE_string(
     'image_dir',
-    '/home/yxyang/research/semantic_locomotion_ros/logs/outdoor_simplified',
+    '/home/yxyang/research/semantic_locomotion_ros/data/'
+    'ghost_memory_taylor_demo2/extracted_images',
     'path to images.')
-flags.DEFINE_string('output_dir', 'out/speed_predictions', 'output paths.')
+flags.DEFINE_string(
+    'output_dir',
+    '/home/yxyang/research/semantic_locomotion_ros/data/'
+    'ghost_memory_taylor_demo2/predictions',
+    'output paths.')
 FLAGS = flags.FLAGS
 
 
@@ -81,7 +85,7 @@ def main(argv):
     if mask is None:
       mask = mask_utils.get_segmentation_mask(height=image.shape[1],
                                               width=image.shape[2])
-    pred_embedding = vision_model.get_embedding_lowdim(image)[0]
+    pred_embedding = vision_model.get_embedding(image)[0]
     pred_speed_per_pixel = speed_model(pred_embedding).numpy()
     pred_speed = np.sum(pred_speed_per_pixel * mask) / np.sum(mask)
 

@@ -15,7 +15,7 @@ class DataLoader:
     self._data_size = 0
     for filename in tqdm(self._filenames):
       temp = dict(np.load(filename, allow_pickle=True))
-      self._data_size += temp['timestamps'].shape[0]
+      self._data_size += temp['images'].shape[0]
       del temp
     logging.info("Loaded {} frames of data.".format(self._data_size))
     self._batch_size = batch_size
@@ -30,7 +30,7 @@ class DataLoader:
 
   def _load_file(self, path):
     self._curr_file = dict(np.load(path, allow_pickle=True))
-    self._curr_file_length = self._curr_file['timestamps'].shape[0]
+    self._curr_file_length = self._curr_file['images'].shape[0]
     idx = np.arange(self._curr_file_length)
     np.random.shuffle(idx)
     for key in self._curr_file:
@@ -48,13 +48,13 @@ class DataLoader:
       self._frame_idx = 0
       self._curr_file = dict(
           np.load(self._filenames[self._file_idx], allow_pickle=True))
-      self._curr_file_length = self._curr_file['timestamps'].shape[0]
+      self._curr_file_length = self._curr_file['images'].shape[0]
 
     embeddings = self._curr_file['embeddings'][self.
                                                _frame_idx:self._frame_idx +
                                                self._batch_size]
-    speed = self._curr_file['mean_speed_commands'][
-        self._frame_idx:self._frame_idx + self._batch_size, 0]
+    speed = self._curr_file['cmds'][self._frame_idx:self._frame_idx +
+                                    self._batch_size, 0]
     self._frame_idx += self._batch_size
     return embeddings, speed
 

@@ -216,14 +216,6 @@ class HardNet(Model):
     out = tf.image.resize(out, input_shape[1:3])
     return out
 
-  def get_embedding_lowdim(self, x):
-    if (self._pca_mean is None) or (self._principal_components is None):
-      raise RuntimeError("PCA data is not loaded.")
-    embedding = self.get_embedding(x)
-    embedding = tf.matmul((embedding - self._pca_mean),
-                          self._principal_components)
-    return embedding
-
   def load_pca_data(self, data_path):
     logging.info("Loading PCA data from: {}.".format(data_path))
     pca_data = np.load(data_path)

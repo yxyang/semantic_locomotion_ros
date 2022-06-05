@@ -12,9 +12,11 @@ from m1_perception.speed_model import data_loader
 from m1_perception.speed_model.model import SpeedModel
 from m1_perception.speed_model import mask_utils
 
-flags.DEFINE_string('train_data_dir', 'speed_model/data/train',
+flags.DEFINE_string('train_data_dir',
+                    'speed_model/data/ghost_memory_taylor_demo2/train',
                     'path to training data.')
-flags.DEFINE_string('val_data_dir', 'speed_model/data/val',
+flags.DEFINE_string('val_data_dir',
+                    'speed_model/data/ghost_memory_taylor_demo2/val',
                     'path to validation data.')
 flags.DEFINE_string('logdir', 'speed_model_logs', 'path to logging directory.')
 flags.DEFINE_integer('batch_size', 6, 'batch size.')
