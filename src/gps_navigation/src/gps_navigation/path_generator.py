@@ -12,7 +12,7 @@ from nav_msgs.msg import Path
 import numpy as np
 import rospy
 from sensor_msgs.msg import CompressedImage, NavSatFix
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 from tf.transformations import euler_from_quaternion
 import tf2_py as tf2
 import tf2_ros
@@ -138,6 +138,14 @@ class PathGenerator:
     self._bev_map_publisher.publish(msg)
     plt.close(fig)
 
+  def skip_waypoint_callback(self, msg):
+    del msg # unused
+    if len(self._waypoints) > 0:
+      rospy.loginfo("Waypoint skipped.")
+      self._waypoints = self._waypoints[1:]
+    else:
+      rospy.loginfo("No waypoint to skip.")
+
 
 def main(argv):
   del argv  # unused
@@ -148,6 +156,8 @@ def main(argv):
   waypoints = np.load(open(FLAGS.waypoint_file_path, 'rb'))
   path_generator = PathGenerator(waypoints)
   rospy.Subscriber('/fix', NavSatFix, path_generator.gps_fix_callback)
+  rospy.Subscriber('/skip_waypoint', Bool,
+                   path_generator.skip_waypoint_callback)
 
   rate = rospy.Rate(1)
   while not rospy.is_shutdown():

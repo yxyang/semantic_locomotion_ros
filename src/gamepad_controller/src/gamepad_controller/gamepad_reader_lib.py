@@ -81,6 +81,7 @@ class Gamepad:
         GaitMode.AUTO_SPEED_AUTO_GAIT, GaitMode.AUTO_NAV
     ])
     self._gait_mode = next(self._gait_mode_generator)
+    self._skip_waypoint = False
 
     # Controller states
     self.vx_raw, self.vy_raw, self.wz_raw = 0., 0., 0.
@@ -143,6 +144,8 @@ class Gamepad:
     elif event.ev_type == 'Absolute' and event.code == 'ABS_X':
       self.wz_raw = _interpolate(-event.state, MAX_ABS_VAL,
                                  self._vel_scale_rot)
+    elif event.ev_type == 'Absolute' and event.code == 'ABS_HAT0X':
+      self._skip_waypoint = bool(event.state)
 
     if self._estop_flagged and self._lj_pressed:
       self._estop_flagged = False
@@ -218,3 +221,11 @@ class Gamepad:
 
   def stop(self):
     self.is_running = False
+
+  @property
+  def skip_waypoint(self):
+    return self._skip_waypoint
+
+  @skip_waypoint.setter
+  def skip_waypoint(self, val):
+    self._skip_waypoint = val

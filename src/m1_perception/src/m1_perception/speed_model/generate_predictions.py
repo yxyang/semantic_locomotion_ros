@@ -23,12 +23,12 @@ flags.DEFINE_string('speed_model_dir',
 flags.DEFINE_string(
     'image_dir',
     '/home/yxyang/research/semantic_locomotion_ros/data/'
-    'ghost_memory_taylor_demo/extracted_images',
+    'ghost_memory_taylor_demo2/extracted_images',
     'path to images.')
 flags.DEFINE_string(
     'output_dir',
     '/home/yxyang/research/semantic_locomotion_ros/data/'
-    'ghost_memory_taylor_demo/predictions',
+    'ghost_memory_taylor_demo2/predictions',
     'output paths.')
 FLAGS = flags.FLAGS
 

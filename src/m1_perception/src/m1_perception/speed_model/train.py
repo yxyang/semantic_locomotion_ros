@@ -19,7 +19,7 @@ flags.DEFINE_string('val_data_dir',
                     'speed_model/data/ghost_memory_taylor_demo2/val',
                     'path to validation data.')
 flags.DEFINE_string('logdir', 'speed_model_logs', 'path to logging directory.')
-flags.DEFINE_integer('batch_size', 6, 'batch size.')
+flags.DEFINE_integer('batch_size', 32, 'batch size.')
 flags.DEFINE_integer('num_epoches', 100, 'number of epoches.')
 flags.DEFINE_integer('save_frequency', 1, 'logging frequency.')
 flags.DEFINE_integer('eval_frequency', 1, 'eval frequency.')
@@ -31,7 +31,7 @@ def main(argv):
   train_loader = data_loader.DataLoader(FLAGS.train_data_dir, FLAGS.batch_size)
   val_loader = data_loader.DataLoader(FLAGS.val_data_dir, FLAGS.batch_size)
 
-  model = SpeedModel(num_hidden_layers=1, dim_hidden=20)
+  model = SpeedModel(num_hidden_layers=1, dim_hidden=100)
   loss_object = tf.keras.losses.MeanSquaredError()
   optimizer = tf.keras.optimizers.Adam()
 
@@ -45,7 +45,7 @@ def main(argv):
   writer.set_as_default()
 
   step_count = 0
-  for epoch_id in range(1000):
+  for epoch_id in range(FLAGS.num_epoches):
     for _ in tqdm(range(train_loader.num_batches)):
       embeddings, actual_speed = train_loader.next_batch()
       with tf.GradientTape() as tape:

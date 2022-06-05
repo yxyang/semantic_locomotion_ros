@@ -79,6 +79,9 @@ def main(_):
   gait_command_publisher = rospy.Publisher('gait_command',
                                            gait_command,
                                            queue_size=1)
+  skip_waypoint_publisher = rospy.Publisher('/skip_waypoint',
+                                            Bool,
+                                            queue_size=1)
 
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
@@ -88,6 +91,12 @@ def main(_):
     controller_mode_publisher.publish(gamepad.mode_command)
     estop_publisher.publish(gamepad.estop_flagged)
     gaitmode_publisher.publish(str(gamepad.gait_mode))
+
+    if gamepad.skip_waypoint:
+      rospy.loginfo("Skipping waypoint.")
+      skip_waypoint_publisher.publish(True)
+      gamepad.skip_waypoint = False
+
     if gamepad.gait_mode == GaitMode.MANUAL_SPEED_MANUAL_GAIT:
       gait_command_publisher.publish(gamepad.gait_command)
       speed_command_publisher.publish(gamepad.speed_command)
