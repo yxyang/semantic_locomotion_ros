@@ -23,12 +23,12 @@ flags.DEFINE_string('speed_model_dir',
 flags.DEFINE_string(
     'image_dir',
     '/home/yxyang/research/semantic_locomotion_ros/data/'
-    'ghost_memory_taylor_demo2/extracted_images',
+    'ghost_memory_taylor_demo/extracted_images',
     'path to images.')
 flags.DEFINE_string(
     'output_dir',
     '/home/yxyang/research/semantic_locomotion_ros/data/'
-    'ghost_memory_taylor_demo2/predictions',
+    'ghost_memory_taylor_demo/predictions',
     'output paths.')
 FLAGS = flags.FLAGS
 
@@ -71,7 +71,6 @@ def main(argv):
 
   vision_model = HardNet()
   vision_model.load_weights(FLAGS.vision_model_dir)
-  vision_model.load_pca_data(FLAGS.pca_data_dir)
 
   speed_model = SpeedModel(num_hidden_layers=1, dim_hidden=20)
   speed_model.load_weights(FLAGS.speed_model_dir)

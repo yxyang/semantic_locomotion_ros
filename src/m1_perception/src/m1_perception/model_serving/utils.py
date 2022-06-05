@@ -25,13 +25,14 @@ def convert_speedmap_to_bgr(speed_map, min_speed=0, max_speed=2):
   """Converts a HxW speedmap into HxWx3 RGB image for visualization."""
   speed_map = np.clip(speed_map, min_speed, max_speed)
   # Interpolate between 0 and 1
-  speed_map = (speed_map - min_speed) / (max_speed - min_speed)
+  speed_map = 2 * (speed_map - min_speed) / (max_speed - min_speed)
   slow_color = np.array([0, 0, 255.])
   fast_color = np.array([0, 255., 0])
 
   channels = []
   for channel_id in range(3):
     channel_value = slow_color[channel_id] * (
-        1 - speed_map) + fast_color[channel_id] * speed_map
+        2 - speed_map) + fast_color[channel_id] * speed_map
+    channel_value = np.clip(channel_value, 0, 255.)
     channels.append(channel_value)
   return np.stack(channels, axis=-1).astype(np.uint8)
