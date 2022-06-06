@@ -31,7 +31,7 @@ def main(argv):
   train_loader = data_loader.DataLoader(FLAGS.train_data_dir, FLAGS.batch_size)
   val_loader = data_loader.DataLoader(FLAGS.val_data_dir, FLAGS.batch_size)
 
-  model = SpeedModel(num_hidden_layers=1, dim_hidden=100)
+  model = SpeedModel(num_hidden_layers=1, dim_hidden=20)
   loss_object = tf.keras.losses.MeanSquaredError()
   optimizer = tf.keras.optimizers.Adam()
 

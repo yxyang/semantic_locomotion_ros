@@ -20,7 +20,8 @@ flags.DEFINE_string("vision_model_dir",
                     "m1_perception/checkpoints/vision_model/cp-99.ckpt",
                     "path to model checkpoint.")
 flags.DEFINE_string('speed_model_dir',
-                    'm1_perception/checkpoints/speed_model_summer/cp-46.ckpt',
+                    'm1_perception/checkpoints/speed_model_summer_cleaned/'
+                    'cp-59.ckpt',
                     'path to speed model.')
 flags.DEFINE_string('server_addr', '10.211.55.2', 'server address.')
 flags.DEFINE_integer('port', 5005, 'port number.')

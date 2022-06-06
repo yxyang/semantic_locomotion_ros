@@ -18,7 +18,7 @@ from m1_perception.speed_model import mask_utils
 flags.DEFINE_string('vision_model_dir', 'checkpoints/vision_model/cp-99.ckpt',
                     'path to vision model.')
 flags.DEFINE_string('speed_model_dir',
-                    'checkpoints/speed_model_summer/cp-46.ckpt',
+                    'checkpoints/speed_model_summer_cleaned/cp-59.ckpt',
                     'path to speed model.')
 flags.DEFINE_string(
     'image_dir',
