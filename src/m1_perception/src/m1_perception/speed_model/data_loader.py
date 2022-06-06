@@ -53,8 +53,9 @@ class DataLoader:
     images = self._data['images'][self._frame_idx:self._frame_idx +
                                   self._batch_size]
     embeddings = self._model.get_embedding(images)
-    speed = self._data['cmds'][self._frame_idx:self._frame_idx +
-                               self._batch_size][0]
+    speed = self._data['cmds'][
+        self._frame_idx:self._frame_idx +  # pylint: disable=E1126
+        self._batch_size, 0]
     self._frame_idx += self._batch_size
     return embeddings, speed
 

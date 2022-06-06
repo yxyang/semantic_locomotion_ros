@@ -45,6 +45,7 @@ def compute_speed_map(image_array_bgr, stub, segmentation_mask):
   image_request = utils.numpy_array_to_grpc_message(image_array_rgb)
   response = stub.GetSpeedEstimation(image_request)
   response_image = utils.grpc_message_to_numpy_array(response)[..., 0]
+  response_image = np.clip(response_image, 0, 2)
   desired_speed = np.sum(
       response_image * segmentation_mask) / np.sum(segmentation_mask)
   command = speed_command(vel_x=desired_speed,

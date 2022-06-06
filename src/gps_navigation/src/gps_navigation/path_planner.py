@@ -80,7 +80,7 @@ class PathPlanner:
     goal_displacement = self._goal - self._local_endpoints
     goal_distance = np.sqrt(np.sum(np.square(goal_displacement), axis=1))
     remaining_traversal_time = goal_distance / self._remaining_speed
-    total_traversal_time = local_traversal_time + remaining_traversal_time
+    total_traversal_time = local_traversal_time * 0 + remaining_traversal_time
     action = np.argmin(total_traversal_time)
 
     speed_command_msg = speed_command()

@@ -129,7 +129,7 @@ def main(_):
     else:
       # AutoNav
       cmd = gamepad.speed_command
-      neutral_x = nav_command_listener.desired_speed.vel_x
+      neutral_x = speed_command_listener.desired_speed.vel_x
       cmd.vel_x /= gamepad.vel_scale_x
       cmd.vel_x = np.where(
           cmd.vel_x < 0,
@@ -138,7 +138,7 @@ def main(_):
           # Accelerate
           neutral_x + cmd.vel_x * (gamepad.vel_scale_x - neutral_x))
 
-      neutral_y = nav_command_listener.desired_speed.vel_y
+      neutral_y = speed_command_listener.desired_speed.vel_y
       cmd.vel_y /= gamepad.vel_scale_y  # Normalize to [-1, 1]
       cmd.vel_y = np.where(
           cmd.vel_y < 0, -gamepad.vel_scale_y + (cmd.vel_y + 1) *
