@@ -1,7 +1,7 @@
 <launch>
   <!-- Localization -->
-  <node pkg="gps_navigation" type="robot_localizer.py" name="robot_localizer" respawn="false" args="--gps_anchor_file=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/taylor_fields.npy --use_emulated_gps=False"/>
-  <node pkg="gps_navigation" type="path_generator.py" name="path_generator" respawn="false" args="--waypoint_file_path=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/taylor_fields.npy"/>
+  <node pkg="gps_navigation" type="robot_localizer.py" name="robot_localizer" respawn="false" args="--gps_anchor_file=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/bridle_trails.npy --use_emulated_gps=False"/>
+  <node pkg="gps_navigation" type="path_generator.py" name="path_generator" respawn="false" args="--waypoint_file_path=/home/yxyang/research/semantic_locomotion_ros/src/gps_navigation/data/bridle_trails.npy"/>
   <node pkg="gps_navigation" type="path_planner.py" name="path_planner" respawn="false"/>
   <node name="nmea_serial_driver_node" pkg="nmea_navsat_driver" type="nmea_serial_driver" output="screen" respawn="true">
     <param name="port" value="/dev/ttyACM0"/>
