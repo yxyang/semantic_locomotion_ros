@@ -61,7 +61,7 @@ class PathGenerator:
       return
 
     self._distance_publisher.publish(
-        "Distance to next waypoint: {:.2f}".format(distance))
+        "Distance to next waypoint: {}".format(distance))
 
     # Get robot transform since we publish in robot frame
     try:

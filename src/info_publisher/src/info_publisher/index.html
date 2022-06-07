@@ -26,24 +26,14 @@
   });
 
   // Subscribing to a Topic
-  var distance_listener = new ROSLIB.Topic({
+  var listener = new ROSLIB.Topic({
     ros : ros,
     name : '/status/distance_to_waypoint',
     messageType : 'std_msgs/String'
   });
 
-  distance_listener.subscribe(function(message) {
+  listener.subscribe(function(message) {
     document.getElementById('distance_to_waypoint').innerHTML = message.data;
-  });
-
-  var heading_bias_listener = new ROSLIB.Topic({
-    ros : ros,
-    name : '/status/heading_bias',
-    messageType : 'std_msgs/String'
-  });
-
-  heading_bias_listener.subscribe(function(message) {
-    document.getElementById('heading_bias').innerHTML = message.data;
   });
 
   var operation_mode_topic = new ROSLIB.Topic({
@@ -123,7 +113,6 @@
 
   <p>GPS status: <span id="gps_status"/></p>
   <p id="distance_to_waypoint">Distance to waypoint: unknown.</p>
-  <p id="heading_bias">IMU yaw bias: unknown.</p>
   <img id="bev_speed_map" style='height: 30%; width: 30%; object-fit: contain' src="assets/img/placeholder.png">
   <img id="nav_map" style='height: 30%; width: 30%; object-fit: contain' src="assets/img/placeholder.png">
 </body>
