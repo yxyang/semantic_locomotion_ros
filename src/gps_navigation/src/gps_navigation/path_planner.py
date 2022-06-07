@@ -14,7 +14,7 @@ from a1_interface.msg import speed_command
 
 FLAGS = flags.FLAGS
 
-ROTATION_MAP = [0.5, 0, -0.5]  # Left, Straight, Right
+ROTATION_MAP = [0.75, 0, -0.75]  # Left, Straight, Right
 
 
 def compute_end_point(angle, x_lim=40, y_lim=20):
@@ -49,7 +49,7 @@ class PathPlanner:
   """Simple path planner with left/straight/right actions."""
   def __init__(self,
                local_distance=2.,
-               action_angles=np.array([30., 0., -30.]) / 180 * np.pi,
+               action_angles=np.array([45., 0., -45.]) / 180 * np.pi,
                remaining_speed=0.8):
     self._local_distance = local_distance
     self._action_angles = action_angles
