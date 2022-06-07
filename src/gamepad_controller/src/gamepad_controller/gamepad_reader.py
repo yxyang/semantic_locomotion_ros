@@ -82,6 +82,9 @@ def main(_):
   skip_waypoint_publisher = rospy.Publisher('/skip_waypoint',
                                             Bool,
                                             queue_size=1)
+  fixed_speed_publisher = rospy.Publisher('/status/fixed_speed',
+                                          String,
+                                          queue_size=1)
 
   rate = rospy.Rate(20)
   while not rospy.is_shutdown():
@@ -91,6 +94,7 @@ def main(_):
     controller_mode_publisher.publish(gamepad.mode_command)
     estop_publisher.publish(gamepad.estop_flagged)
     gaitmode_publisher.publish(str(gamepad.gait_mode))
+    fixed_speed_publisher.publish('{:.2f}'.format(gamepad.fixed_speed))
 
     if gamepad.skip_waypoint:
       rospy.loginfo("Skipping waypoint.")
@@ -126,7 +130,7 @@ def main(_):
       speed_command_publisher.publish(cmd)
       desired_gait = gait_policy.get_action(cmd)
       gait_command_publisher.publish(desired_gait)
-    else:
+    elif gamepad.gait_mode == GaitMode.AUTO_NAV:
       # AutoNav
       cmd = gamepad.speed_command
       neutral_x = speed_command_listener.desired_speed.vel_x
@@ -155,6 +159,18 @@ def main(_):
       speed_command_publisher.publish(cmd)
       desired_gait = gait_policy.get_action(cmd)
       gait_command_publisher.publish(desired_gait)
+    elif gamepad.gait_mode == GaitMode.FIXED_SPEED_AUTO_GAIT:
+      cmd = gamepad.speed_command
+      cmd.vel_x = gamepad.fixed_speed
+      speed_command_publisher.publish(cmd)
+      desired_gait = gait_policy.get_action(cmd)
+      gait_command_publisher.publish(desired_gait)
+    else:
+      #FIXED_SPEED_FIXED_GAIT
+      cmd = gamepad.speed_command
+      cmd.vel_x = gamepad.fixed_speed
+      speed_command_publisher.publish(cmd)
+      gait_command_publisher.publish(gamepad.gait_command)
 
     rate.sleep()
 

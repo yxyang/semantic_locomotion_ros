@@ -26,6 +26,7 @@ ALLOWED_GAITS = [slow.get_config(), mid.get_config(), fast.get_config()]
 
 
 class GaitMode(enum.Enum):
+  """Set of possible operation modes."""
   # Manually switch between a set of discrete gaits, and manually control
   # robot speed.
   MANUAL_SPEED_MANUAL_GAIT = 1
@@ -35,6 +36,10 @@ class GaitMode(enum.Enum):
   AUTO_SPEED_AUTO_GAIT = 3
   # Fully autonomous operation
   AUTO_NAV = 4
+  # Ablation study: Fixed, constant speed; adaptive gait
+  FIXED_SPEED_AUTO_GAIT = 5
+  # Ablation study: Fixed, constant speed; non-adaptive gait
+  FIXED_SPEED_FIXED_GAIT = 6
 
 
 def _interpolate(raw_reading, max_raw_reading, new_scale):
@@ -71,6 +76,7 @@ class Gamepad:
     self._rj_pressed = False
     self._walk_height = 0.
     self._foot_height = 0.
+    self._fixed_speed = 0.
 
     self._manual_gait_generator = itertools.cycle(ALLOWED_GAITS)
     self._manual_gait = next(self._manual_gait_generator)
@@ -78,7 +84,8 @@ class Gamepad:
     self._mode = next(self._mode_generator)
     self._gait_mode_generator = itertools.cycle([
         GaitMode.MANUAL_SPEED_MANUAL_GAIT, GaitMode.MANUAL_SPEED_AUTO_GAIT,
-        GaitMode.AUTO_SPEED_AUTO_GAIT, GaitMode.AUTO_NAV
+        GaitMode.AUTO_SPEED_AUTO_GAIT, GaitMode.AUTO_NAV,
+        GaitMode.FIXED_SPEED_AUTO_GAIT, GaitMode.FIXED_SPEED_FIXED_GAIT
     ])
     self._gait_mode = next(self._gait_mode_generator)
     self._skip_waypoint = False
@@ -146,6 +153,9 @@ class Gamepad:
                                  self._vel_scale_rot)
     elif event.ev_type == 'Absolute' and event.code == 'ABS_HAT0X':
       self._skip_waypoint = bool(event.state)
+    elif event.ev_type == 'Absolute' and event.code == 'ABS_HAT0Y':
+      delta_speed = -0.1 * event.state
+      self._fixed_speed = np.clip(self._fixed_speed + delta_speed, 0, 2)
 
     if self._estop_flagged and self._lj_pressed:
       self._estop_flagged = False
@@ -229,3 +239,7 @@ class Gamepad:
   @skip_waypoint.setter
   def skip_waypoint(self, val):
     self._skip_waypoint = val
+
+  @property
+  def fixed_speed(self):
+    return self._fixed_speed
