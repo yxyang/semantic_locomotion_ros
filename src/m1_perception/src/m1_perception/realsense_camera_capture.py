@@ -48,6 +48,7 @@ def compute_speed_map(image_array_bgr, stub, segmentation_mask):
   response_image = np.clip(response_image, 0, 2)
   desired_speed = np.sum(
       response_image * segmentation_mask) / np.sum(segmentation_mask)
+  desired_speed = np.clip(desired_speed, 0.5, 2)
   command = speed_command(vel_x=desired_speed,
                           vel_y=0,
                           rot_z=0,

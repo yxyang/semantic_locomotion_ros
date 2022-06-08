@@ -7,7 +7,7 @@ src/ros_numpy
 src/theora_image_transport
 data_rss/
 src/m1_perception/src/m1_perception/speed_model_logs/*
-
+data_corl2022/
 # MP4 log files
 *.mp4
 
