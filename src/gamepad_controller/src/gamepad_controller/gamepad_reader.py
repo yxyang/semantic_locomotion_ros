@@ -163,14 +163,33 @@ def main(_):
       cmd = gamepad.speed_command
       cmd.vel_x = gamepad.fixed_speed
       speed_command_publisher.publish(cmd)
-      desired_gait = gait_policy.get_action(cmd)
+      desired_gait = gait_policy.get_action(
+          speed_command_listener.desired_speed)
       gait_command_publisher.publish(desired_gait)
     else:
       #FIXED_SPEED_FIXED_GAIT
       cmd = gamepad.speed_command
-      cmd.vel_x = gamepad.fixed_speed
+      neutral_x = speed_command_listener.desired_speed.vel_x
+      cmd.vel_x /= gamepad.vel_scale_x
+      cmd.vel_x = np.where(
+          cmd.vel_x < 0,
+          # Brake
+          -0.5 + (cmd.vel_x + 1) * (neutral_x + 0.5),
+          # Accelerate
+          neutral_x + cmd.vel_x * (gamepad.vel_scale_x - neutral_x))
+      neutral_y = speed_command_listener.desired_speed.vel_y
+      cmd.vel_y /= gamepad.vel_scale_y  # Normalize to [-1, 1]
+      cmd.vel_y = np.where(
+          cmd.vel_y < 0, -gamepad.vel_scale_y + (cmd.vel_y + 1) *
+          (neutral_y + gamepad.vel_scale_y),
+          neutral_y + cmd.vel_y * (gamepad.vel_scale_y - neutral_y))
+      cmd.rot_z = gamepad.speed_command.rot_z
+
       speed_command_publisher.publish(cmd)
-      gait_command_publisher.publish(gamepad.gait_command)
+      cmd = gamepad.speed_command
+      cmd.vel_x = gamepad.fixed_speed
+      desired_gait = gait_policy.get_action(cmd)
+      gait_command_publisher.publish(desired_gait)
 
     rate.sleep()
 

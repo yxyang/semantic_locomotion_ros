@@ -43,7 +43,8 @@ def generate_plot_and_save(output_path, image, heatmap, pred_speed):
   plt.imshow(image)
 
   plt.subplot(1, 3, 2)
-  colorbar = plt.imshow(heatmap, vmin=0, vmax=2)
+  colorbar = plt.imshow(heatmap, vmin=0.5, vmax=1.5)
+  plt.axis('off')
   plt.colorbar(colorbar, location='right')
 
   plt.subplot(1, 3, 3)

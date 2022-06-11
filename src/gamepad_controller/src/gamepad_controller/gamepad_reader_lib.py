@@ -39,7 +39,7 @@ class GaitMode(enum.Enum):
   # Ablation study: Fixed, constant speed; adaptive gait
   FIXED_SPEED_AUTO_GAIT = 5
   # Ablation study: Fixed, constant speed; non-adaptive gait
-  FIXED_SPEED_FIXED_GAIT = 6
+  AUTO_SPEED_FIXED_GAIT = 6
 
 
 def _interpolate(raw_reading, max_raw_reading, new_scale):
@@ -85,7 +85,7 @@ class Gamepad:
     self._gait_mode_generator = itertools.cycle([
         GaitMode.MANUAL_SPEED_MANUAL_GAIT, GaitMode.MANUAL_SPEED_AUTO_GAIT,
         GaitMode.AUTO_SPEED_AUTO_GAIT, GaitMode.AUTO_NAV,
-        GaitMode.FIXED_SPEED_AUTO_GAIT, GaitMode.FIXED_SPEED_FIXED_GAIT
+        GaitMode.FIXED_SPEED_AUTO_GAIT, GaitMode.AUTO_SPEED_FIXED_GAIT
     ])
     self._gait_mode = next(self._gait_mode_generator)
     self._skip_waypoint = False
