@@ -154,8 +154,8 @@ class Gamepad:
     elif event.ev_type == 'Absolute' and event.code == 'ABS_HAT0X':
       self._skip_waypoint = bool(event.state)
     elif event.ev_type == 'Absolute' and event.code == 'ABS_HAT0Y':
-      delta_speed = -0.1 * event.state
-      self._fixed_speed = np.clip(self._fixed_speed + delta_speed, 0, 2)
+      delta_speed = -0.25 * event.state
+      self._fixed_speed = np.clip(self._fixed_speed + delta_speed, 0, 1.5)
 
     if self._estop_flagged and self._lj_pressed:
       self._estop_flagged = False

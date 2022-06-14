@@ -163,8 +163,7 @@ def main(_):
       cmd = gamepad.speed_command
       cmd.vel_x = gamepad.fixed_speed
       speed_command_publisher.publish(cmd)
-      desired_gait = gait_policy.get_action(
-          speed_command_listener.desired_speed)
+      desired_gait = gait_policy.get_action(cmd)
       gait_command_publisher.publish(desired_gait)
     else:
       #FIXED_SPEED_FIXED_GAIT
