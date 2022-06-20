@@ -37,7 +37,7 @@ class GaitMode(enum.Enum):
   # Fully autonomous operation
   AUTO_NAV = 4
   # Ablation study: Fixed, constant speed; adaptive gait
-  FIXED_SPEED_AUTO_GAIT = 5
+  FIXED_SPEED_FIXED_GAIT = 5
   # Ablation study: Fixed, constant speed; non-adaptive gait
   AUTO_SPEED_FIXED_GAIT = 6
 
@@ -85,7 +85,7 @@ class Gamepad:
     self._gait_mode_generator = itertools.cycle([
         GaitMode.MANUAL_SPEED_MANUAL_GAIT, GaitMode.MANUAL_SPEED_AUTO_GAIT,
         GaitMode.AUTO_SPEED_AUTO_GAIT, GaitMode.AUTO_NAV,
-        GaitMode.FIXED_SPEED_AUTO_GAIT, GaitMode.AUTO_SPEED_FIXED_GAIT
+        GaitMode.FIXED_SPEED_FIXED_GAIT, GaitMode.AUTO_SPEED_FIXED_GAIT
     ])
     self._gait_mode = next(self._gait_mode_generator)
     self._skip_waypoint = False

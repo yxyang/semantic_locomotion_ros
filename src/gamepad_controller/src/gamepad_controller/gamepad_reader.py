@@ -159,14 +159,14 @@ def main(_):
       speed_command_publisher.publish(cmd)
       desired_gait = gait_policy.get_action(cmd)
       gait_command_publisher.publish(desired_gait)
-    elif gamepad.gait_mode == GaitMode.FIXED_SPEED_AUTO_GAIT:
+    elif gamepad.gait_mode == GaitMode.FIXED_SPEED_FIXED_GAIT:
       cmd = gamepad.speed_command
       cmd.vel_x = gamepad.fixed_speed
       speed_command_publisher.publish(cmd)
       desired_gait = gait_policy.get_action(cmd)
       gait_command_publisher.publish(desired_gait)
     else:
-      #FIXED_SPEED_FIXED_GAIT
+      #AUTO_SPEED_FIXED_GAIT
       cmd = gamepad.speed_command
       neutral_x = speed_command_listener.desired_speed.vel_x
       cmd.vel_x /= gamepad.vel_scale_x
