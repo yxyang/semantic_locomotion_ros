@@ -10,11 +10,12 @@ from m1_perception.fchardnet.model import HardNet
 
 class DataLoader:
   """Generic dataloader for speed model."""
-  def __init__(self,
-               root_dir,
-               batch_size,
-               shuffle_between_epoches=True,
-               vision_model_ckpt='checkpoints/vision_model/cp-99.ckpt'):
+  def __init__(
+      self,
+      root_dir,
+      batch_size,
+      shuffle_between_epoches=True,
+      vision_model_ckpt='m1_perception/checkpoints/vision_model/cp-99.ckpt'):
     self._load_files(root_dir)
     logging.info("Loaded {} frames of data.".format(
         self._data['images'].shape[0]))
@@ -53,9 +54,8 @@ class DataLoader:
     images = self._data['images'][self._frame_idx:self._frame_idx +
                                   self._batch_size]
     embeddings = self._model.get_embedding(images)
-    speed = self._data['cmds'][
-        self._frame_idx:self._frame_idx +  # pylint: disable=E1126
-        self._batch_size, 0]
+    speed = self._data['cmds'][self._frame_idx:self._frame_idx +  # pylint: disable=E1126
+                               self._batch_size, 0]
     self._frame_idx += self._batch_size
     return embeddings, speed
 

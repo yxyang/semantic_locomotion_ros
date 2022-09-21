@@ -197,6 +197,11 @@ class HardNet(Model):
     out = tf.image.resize(out, input_shape[1:3])
     return out
 
+  def get_prediction_onehot(self, x):
+    logits = self.call(x)
+    class_score = tf.argmax(logits, axis=-1)
+    return tf.one_hot(class_score, depth=25)
+
   def get_embedding(self, x):
     """Forward pass of FCHarDNet."""
     skip_connections = []

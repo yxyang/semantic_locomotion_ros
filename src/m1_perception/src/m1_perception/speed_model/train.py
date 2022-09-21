@@ -12,15 +12,17 @@ from m1_perception.speed_model import data_loader
 from m1_perception.speed_model.model import SpeedModel
 from m1_perception.speed_model import mask_utils
 
-flags.DEFINE_string('train_data_dir',
-                    'speed_model/data/ghost_memory_taylor_demo2/train',
-                    'path to training data.')
-flags.DEFINE_string('val_data_dir',
-                    'speed_model/data/ghost_memory_taylor_demo2/val',
-                    'path to validation data.')
+flags.DEFINE_string(
+    'train_data_dir',
+    'm1_perception/speed_model/data/ghost_memory_taylor_demo2/train',
+    'path to training data.')
+flags.DEFINE_string(
+    'val_data_dir',
+    'm1_perception/speed_model/data/ghost_memory_taylor_demo/val',
+    'path to validation data.')
 flags.DEFINE_string('logdir', 'speed_model_logs', 'path to logging directory.')
 flags.DEFINE_integer('batch_size', 32, 'batch size.')
-flags.DEFINE_integer('num_epoches', 100, 'number of epoches.')
+flags.DEFINE_integer('num_epoches', 60, 'number of epoches.')
 flags.DEFINE_integer('save_frequency', 1, 'logging frequency.')
 flags.DEFINE_integer('eval_frequency', 1, 'eval frequency.')
 FLAGS = flags.FLAGS
