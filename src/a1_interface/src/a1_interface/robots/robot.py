@@ -201,8 +201,11 @@ class Robot:
   def foot_forces(self):
     """Returns the contact force of the robot's feet."""
     all_contacts = self._pybullet_client.getContactPoints(bodyA=self.quadruped)
+    base_rot_mat = np.array(
+        self._pybullet_client.getMatrixFromQuaternion(
+            self.base_orientation_quat)).reshape((3, 3))
 
-    contact_forces = np.zeros(4)
+    contact_forces = np.zeros((4, 3))
     for contact in all_contacts:
       # Ignore self contacts
       if contact[2] == self.quadruped:
@@ -210,9 +213,16 @@ class Robot:
       try:
         toe_link_index = self._foot_link_ids.index(contact[3])
         contact_forces[toe_link_index] = contact[9]
+
+        contact_force_local = np.array((contact[9], -contact[10], -contact[12]))
+        local_to_world = np.stack((contact[7], contact[11], contact[13]),
+                                  axis=1)
+        contact_force_world = local_to_world.dot(contact_force_local)
+        contact_forces[toe_link_index] = base_rot_mat.T.dot(
+            contact_force_world)
       except ValueError:
         continue
-    return contact_forces
+    return np.array(contact_forces)
 
   @property
   def foot_velocities_world_frame(self):
